@@ -1,3 +1,3 @@
 # AI-ER
 Chuyen de ptpm
-Phạm Trọng Nghĩa - 1721030862
+Phạm Trọng Nghĩa - 1721030862.
