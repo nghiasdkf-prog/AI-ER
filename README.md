@@ -1,3 +1,3 @@
 # AI-ER
 Chuyen de ptpm
-adsdsadsa
+Pham Trong Nghia - 1721030862
