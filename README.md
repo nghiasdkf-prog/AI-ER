@@ -18,7 +18,7 @@
 ## 📊 Tiến độ và đóng góp cho dự án
 
 | Tính năng/Công việc | Trạng thái | Người phụ trách | Deadline | Ghi chú |
----
+|:---:|-----------|:----:|---------|---------|
 | Tạo repository,src,docs | ✅ Hoàn thành | Phạm Trọng Nghĩa | 20/03/2026 | Đã setup branch protection |
 | Viết README.md | ✅ Hoàn thành | ...... | 20/03/2026 | Đã thêm thông tin thành viên |
 | Viết Báo Cáo Word | ⏳ Chưa bắt đầu | 
