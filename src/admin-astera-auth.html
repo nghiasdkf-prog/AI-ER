@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Astera Mobile Admin</title>
+  <meta name="description" content="Trang quản trị demo cho Astera Mobile: quản lý sản phẩm và hóa đơn trên front-end bằng localStorage." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style-astera-auth.css" />
+</head>
+<body class="admin-body">
+  <div class="page-blur blur-1"></div>
+  <div class="page-blur blur-2"></div>
+
+  <header class="site-header" id="siteHeader">
+    <div class="container header-inner">
+      <a href="index-astera-auth.html" class="brand">
+        <div class="brand-logo">AS</div>
+        <div>
+          <strong>Astera Admin</strong>
+          <span>Control Center</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" id="mainNav">
+        <a href="#overview">Tổng quan</a>
+        <a href="#products">Sản phẩm</a>
+        <a href="#orders">Hóa đơn</a>
+        <a href="index-astera-auth.html">Về cửa hàng</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="icon-btn" id="themeToggle" aria-label="Đổi giao diện sáng tối">
+          <span class="icon">◐</span>
+        </button>
+        <button class="btn btn-secondary btn-admin-session" id="adminSessionBtn" type="button">Chưa đăng nhập</button>
+        <button class="btn btn-secondary btn-admin-link" id="adminLogoutBtn" type="button">Đăng xuất</button>
+        <a class="btn btn-secondary btn-admin-link" href="index-astera-auth.html">Xem Store</a>
+        <button class="menu-btn" id="menuBtn" aria-label="Mở menu">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="section admin-auth-section" id="adminAuthGate">
+      <div class="container">
+        <div class="admin-auth-card reveal">
+          <span class="eyebrow">Bảo mật quản trị</span>
+          <h1>Chỉ tài khoản admin mới được vào trang quản trị</h1>
+          <p id="adminAuthMessage">Đăng nhập bằng tài khoản admin để quản lý sản phẩm và hóa đơn. Nếu bạn đăng nhập bằng tài khoản user, hệ thống sẽ từ chối quyền truy cập.</p>
+
+          <div class="admin-auth-session" id="adminCurrentSession"></div>
+
+          <form class="admin-auth-form" id="adminLoginForm">
+            <div class="form-grid admin-auth-form-grid">
+              <div class="form-group">
+                <label for="adminLoginEmail">Email</label>
+                <input type="email" id="adminLoginEmail" placeholder="admin@astera.vn" required />
+              </div>
+              <div class="form-group">
+                <label for="adminLoginPassword">Mật khẩu</label>
+                <input type="password" id="adminLoginPassword" placeholder="Nhập mật khẩu" required />
+              </div>
+            </div>
+            <div class="admin-auth-actions">
+              <button class="btn btn-primary" type="submit">Đăng nhập admin</button>
+              <button class="btn btn-secondary" type="button" id="adminLogoutGateBtn">Đăng xuất tài khoản hiện tại</button>
+              <a class="btn btn-secondary" href="index-astera-auth.html">Về trang store</a>
+            </div>
+          </form>
+
+          <div class="demo-credentials admin-demo-credentials">
+            <div class="demo-credential">
+              <strong>Admin demo</strong>
+              <span>admin@astera.vn / admin123</span>
+            </div>
+            <div class="demo-credential">
+              <strong>User demo</strong>
+              <span>user@astera.vn / user123</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  <main class="admin-main" id="adminApp">
+    <section class="section admin-hero" id="overview">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <span class="eyebrow">Dashboard quản trị</span>
+            <h1 class="admin-title">Quản lý sản phẩm và hóa đơn trong một giao diện duy nhất</h1>
+          </div>
+          <p>Theo dõi nhanh số lượng sản phẩm, trạng thái tồn kho, tổng số đơn và doanh thu demo. Dữ liệu được đồng bộ với trang mua hàng bằng localStorage.</p>
+        </div>
+
+        <div class="admin-stats-grid reveal delay-1">
+          <article class="admin-stat-card">
+            <span>Tổng sản phẩm</span>
+            <strong id="statProducts">0</strong>
+            <small>Đang được hiển thị trên cửa hàng</small>
+          </article>
+          <article class="admin-stat-card">
+            <span>Còn hàng</span>
+            <strong id="statInStock">0</strong>
+            <small>Sản phẩm có tồn kho lớn hơn 0</small>
+          </article>
+          <article class="admin-stat-card">
+            <span>Tổng hóa đơn</span>
+            <strong id="statOrders">0</strong>
+            <small>Toàn bộ đơn đã tạo từ checkout</small>
+          </article>
+          <article class="admin-stat-card">
+            <span>Doanh thu demo</span>
+            <strong id="statRevenue">0đ</strong>
+            <small>Tổng tiền của các đơn chưa bị hủy</small>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="products">
+      <div class="container admin-grid">
+        <div class="admin-panel reveal">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Quản lý sản phẩm</span>
+              <h2 id="productFormTitle">Thêm sản phẩm mới</h2>
+            </div>
+            <button class="btn btn-secondary" id="resetProductFormBtn" type="button">Làm mới form</button>
+          </div>
+
+          <form class="admin-form" id="productForm">
+            <input type="hidden" id="productId" />
+            <div class="form-grid admin-form-grid">
+              <div class="form-group">
+                <label for="productName">Tên sản phẩm</label>
+                <input type="text" id="productName" required placeholder="Ví dụ: iPhone 16 Pro Max" />
+              </div>
+              <div class="form-group">
+                <label for="productBrand">Thương hiệu</label>
+                <input type="text" id="productBrand" required placeholder="Apple, Samsung..." />
+              </div>
+              <div class="form-group">
+                <label for="productCategory">Danh mục</label>
+                <select id="productCategory" required>
+                  <option value="Flagship">Flagship</option>
+                  <option value="Gaming">Gaming</option>
+                  <option value="Camera">Camera</option>
+                  <option value="Pin khủng">Pin khủng</option>
+                  <option value="Tầm trung">Tầm trung</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="productPrice">Giá bán</label>
+                <input type="number" id="productPrice" required min="0" step="1000" />
+              </div>
+              <div class="form-group">
+                <label for="productOldPrice">Giá cũ</label>
+                <input type="number" id="productOldPrice" required min="0" step="1000" />
+              </div>
+              <div class="form-group">
+                <label for="productSale">Giảm giá (%)</label>
+                <input type="number" id="productSale" required min="0" max="99" />
+              </div>
+              <div class="form-group">
+                <label for="productStock">Tồn kho</label>
+                <input type="number" id="productStock" required min="0" />
+              </div>
+              <div class="form-group">
+                <label for="productRating">Đánh giá</label>
+                <input type="number" id="productRating" required min="0" max="5" step="0.1" />
+              </div>
+              <div class="form-group">
+                <label for="productReviews">Số lượt review</label>
+                <input type="number" id="productReviews" required min="0" />
+              </div>
+              <div class="form-group">
+                <label for="productMemory">Bộ nhớ</label>
+                <input type="text" id="productMemory" required placeholder="256GB" />
+              </div>
+              <div class="form-group">
+                <label for="productBattery">Pin</label>
+                <input type="text" id="productBattery" required placeholder="5000mAh" />
+              </div>
+              <div class="form-group">
+                <label for="productCamera">Camera</label>
+                <input type="text" id="productCamera" required placeholder="50MP OIS" />
+              </div>
+              <div class="form-group form-group-full">
+                <label for="productScreen">Màn hình</label>
+                <input type="text" id="productScreen" required placeholder='6.7" AMOLED 120Hz' />
+              </div>
+              <div class="form-group form-group-full">
+                <label for="productChip">Chip xử lý</label>
+                <input type="text" id="productChip" required placeholder="Snapdragon 8 Elite" />
+              </div>
+              <div class="form-group form-group-full">
+                <label for="productColors">Màu sắc</label>
+                <input type="text" id="productColors" required placeholder="Đen, Trắng, Xanh" />
+              </div>
+              <div class="form-group">
+                <label for="themeColor1">Màu nền 1</label>
+                <input type="color" id="themeColor1" value="#0f766e" />
+              </div>
+              <div class="form-group">
+                <label for="themeColor2">Màu nền 2</label>
+                <input type="color" id="themeColor2" value="#d4af37" />
+              </div>
+              <div class="form-group">
+                <label for="themeColor3">Màu nền 3</label>
+                <input type="color" id="themeColor3" value="#ecfeff" />
+              </div>
+              <div class="form-group form-group-full">
+                <label for="productDesc">Mô tả ngắn</label>
+                <textarea id="productDesc" rows="4" required placeholder="Mô tả ngắn để hiển thị trên cửa hàng..."></textarea>
+              </div>
+            </div>
+
+            <div class="admin-form-actions">
+              <button class="btn btn-primary" type="submit" id="saveProductBtn">Lưu sản phẩm</button>
+              <button class="btn btn-secondary" type="button" id="cancelEditBtn">Hủy chỉnh sửa</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="admin-panel reveal delay-1">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Danh sách sản phẩm</span>
+              <h2>Sản phẩm đang bán</h2>
+            </div>
+            <div class="panel-tools">
+              <input type="text" class="admin-search" id="adminProductSearch" placeholder="Tìm theo tên, hãng, chip..." />
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Sản phẩm</th>
+                  <th>Danh mục</th>
+                  <th>Giá</th>
+                  <th>Tồn</th>
+                  <th>Đánh giá</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="productTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="orders">
+      <div class="container admin-grid admin-grid-orders">
+        <div class="admin-panel reveal">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Quản lý hóa đơn</span>
+              <h2>Danh sách đơn hàng</h2>
+            </div>
+            <div class="panel-tools panel-tools-stack">
+              <input type="text" class="admin-search" id="adminOrderSearch" placeholder="Tìm theo mã đơn, tên, số điện thoại..." />
+              <select id="adminOrderStatusFilter" class="admin-select">
+                <option value="all">Tất cả trạng thái</option>
+                <option value="Mới">Mới</option>
+                <option value="Đang xử lý">Đang xử lý</option>
+                <option value="Đã xác nhận">Đã xác nhận</option>
+                <option value="Đang giao">Đang giao</option>
+                <option value="Hoàn tất">Hoàn tất</option>
+                <option value="Đã hủy">Đã hủy</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Mã đơn</th>
+                  <th>Khách hàng</th>
+                  <th>Tổng tiền</th>
+                  <th>Thanh toán</th>
+                  <th>Trạng thái</th>
+                  <th>Ngày tạo</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="orderTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel reveal delay-1">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Chi tiết hóa đơn</span>
+              <h2>Thông tin đơn đang chọn</h2>
+            </div>
+          </div>
+
+          <div id="orderDetailPanel" class="order-detail-panel">
+            <div class="empty-state">
+              <h3>Chưa chọn hóa đơn</h3>
+              <p class="drawer-empty">Nhấn vào nút xem chi tiết trong danh sách bên trái để xem đầy đủ thông tin đơn hàng.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="admin-astera-auth.js"></script>
+</body>
+</html>

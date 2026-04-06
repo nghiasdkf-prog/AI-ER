@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Astera Mobile - Premium Phone Studio</title>
+  <meta name="description" content="Astera Mobile - Demo website bán điện thoại phong cách premium với bảng màu mới, UX/UI đẹp, animation mượt và trải nghiệm mua sắm hiện đại." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style-astera-auth.css" />
+</head>
+<body>
+  <div class="page-blur blur-1"></div>
+  <div class="page-blur blur-2"></div>
+
+  <header class="site-header" id="siteHeader">
+    <div class="container header-inner">
+      <a href="#home" class="brand">
+        <div class="brand-logo">AS</div>
+        <div>
+          <strong>Astera Mobile</strong>
+          <span>Premium Phone Studio</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" id="mainNav">
+        <a href="#home">Trang chủ</a>
+        <a href="#catalog">Sản phẩm</a>
+        <a href="#sale">Khuyến mãi</a>
+        <a href="#reviews">Đánh giá</a>
+        <a href="#contact">Liên hệ</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="icon-btn" id="themeToggle" aria-label="Đổi giao diện sáng tối">
+          <span class="icon">◐</span>
+        </button>
+        <button class="icon-btn" id="favoritesBtn" aria-label="Sản phẩm yêu thích">
+          <span class="icon">❤</span>
+          <span class="badge" id="favoritesCount">0</span>
+        </button>
+        <button class="icon-btn" id="cartBtn" aria-label="Giỏ hàng">
+          <span class="icon">🛒</span>
+          <span class="badge" id="cartCount">0</span>
+        </button>
+        <button class="btn btn-secondary btn-account-trigger" id="accountBtn" type="button">Tài khoản</button>
+        <button class="menu-btn" id="menuBtn" aria-label="Mở menu">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero section" id="home">
+      <div class="container hero-grid">
+        <div class="hero-content reveal">
+          <span class="eyebrow">Premium Tech Boutique</span>
+          <h1>Sắm smartphone cao cấp với giao diện sang hơn, màu mới đẹp hơn và trải nghiệm mua hàng hiện đại</h1>
+          <p>
+            Astera Mobile mang đến trải nghiệm mua sắm cao cấp hơn với phối màu ngọc lục bảo - vàng ánh kim, hiệu ứng mượt, tìm kiếm nhanh và giỏ hàng hiện đại như một website thương mại điện tử chuyên nghiệp.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#catalog" class="btn btn-primary">Mua ngay</a>
+            <button class="btn btn-secondary" id="scrollDealsBtn">Xem ưu đãi</button>
+            <a href="admin-astera-auth.html" class="btn btn-secondary">Trang Admin</a>
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat-card">
+              <strong>1200+</strong>
+              <span>Khách hàng hài lòng</span>
+            </div>
+            <div class="stat-card">
+              <strong>45+</strong>
+              <span>Mẫu điện thoại hot</span>
+            </div>
+            <div class="stat-card">
+              <strong>24/7</strong>
+              <span>Hỗ trợ tận tâm</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual reveal delay-1">
+          <div class="floating-card card-large float-y">
+            <span class="label-hot">ASTERA EDITION</span>
+            <div class="phone-visual phone-gradient-1"></div>
+            <div class="floating-info">
+              <h3>Astera One Ultra</h3>
+              <p>50MP Pro Camera • AI Engine • 5G</p>
+              <strong>24.990.000đ</strong>
+            </div>
+          </div>
+
+          <div class="floating-mini mini-1 float-x">
+            <span>LTPO OLED</span>
+          </div>
+          <div class="floating-mini mini-2 float-y-slow">
+            <span>Ưu đãi đến 18%</span>
+          </div>
+          <div class="floating-mini mini-3 float-x-slow">
+            <span>Thu cũ đổi mới</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="benefits section-sm">
+      <div class="container benefits-grid reveal">
+        <article class="benefit-card">
+          <h3>Giao nhanh toàn quốc</h3>
+          <p>Giao hàng nhanh, theo dõi trạng thái đơn và hỗ trợ đổi trả linh hoạt.</p>
+        </article>
+        <article class="benefit-card">
+          <h3>Bảo hành chính hãng</h3>
+          <p>Sản phẩm được kiểm tra kỹ, đầy đủ chính sách bảo hành minh bạch.</p>
+        </article>
+        <article class="benefit-card">
+          <h3>Thanh toán tiện lợi</h3>
+          <p>Hỗ trợ nhiều hình thức thanh toán, trả góp và xác nhận đơn dễ dàng.</p>
+        </article>
+        <article class="benefit-card">
+          <h3>Tư vấn chuẩn nhu cầu</h3>
+          <p>Gợi ý máy theo học tập, gaming, chụp ảnh, công việc và ngân sách.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="catalog">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <span class="eyebrow">Danh mục nổi bật</span>
+            <h2>Chọn điện thoại phù hợp với bạn</h2>
+          </div>
+          <p>Tìm kiếm theo tên, lọc theo thương hiệu, phân khúc giá, trạng thái khuyến mãi và sắp xếp theo nhu cầu.</p>
+        </div>
+
+        <div class="category-tabs reveal delay-1" id="categoryTabs">
+          <button class="chip active" data-category="Tất cả">Tất cả</button>
+          <button class="chip" data-category="Flagship">Flagship</button>
+          <button class="chip" data-category="Gaming">Gaming</button>
+          <button class="chip" data-category="Camera">Camera</button>
+          <button class="chip" data-category="Pin khủng">Pin khủng</button>
+          <button class="chip" data-category="Tầm trung">Tầm trung</button>
+        </div>
+
+        <div class="catalog-layout">
+          <aside class="filters reveal">
+            <div class="filter-box">
+              <label for="searchInput">Tìm kiếm</label>
+              <input type="text" id="searchInput" placeholder="Ví dụ: iPhone, Galaxy, Xiaomi..." />
+            </div>
+
+            <div class="filter-box">
+              <label for="brandFilter">Thương hiệu</label>
+              <select id="brandFilter">
+                <option value="Tất cả">Tất cả thương hiệu</option>
+              </select>
+            </div>
+
+            <div class="filter-box">
+              <label for="sortFilter">Sắp xếp</label>
+              <select id="sortFilter">
+                <option value="popular">Phổ biến nhất</option>
+                <option value="price-asc">Giá tăng dần</option>
+                <option value="price-desc">Giá giảm dần</option>
+                <option value="rating-desc">Đánh giá cao</option>
+                <option value="sale-desc">Giảm giá mạnh</option>
+              </select>
+            </div>
+
+            <div class="filter-box">
+              <div class="filter-row">
+                <label for="priceRange">Khoảng giá</label>
+                <span id="priceValue">Dưới 35 triệu</span>
+              </div>
+              <input type="range" id="priceRange" min="8000000" max="35000000" step="1000000" value="35000000" />
+            </div>
+
+            <div class="filter-box">
+              <label class="check-item">
+                <input type="checkbox" id="saleOnly" />
+                <span>Chỉ hiện sản phẩm đang giảm giá</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" id="stockOnly" checked />
+                <span>Chỉ hiện sản phẩm còn hàng</span>
+              </label>
+            </div>
+
+            <button class="btn btn-secondary btn-block" id="resetFiltersBtn">Đặt lại bộ lọc</button>
+          </aside>
+
+          <div class="catalog-content reveal delay-1">
+            <div class="catalog-toolbar">
+              <div>
+                <strong id="resultCount">0</strong>
+                <span>sản phẩm được tìm thấy</span>
+              </div>
+              <div class="toolbar-note">Miễn phí giao hàng cho đơn trên 10 triệu</div>
+            </div>
+
+            <div class="product-grid" id="productGrid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sale section" id="sale">
+      <div class="container sale-banner reveal">
+        <div>
+          <span class="eyebrow">Flash Sale giới hạn</span>
+          <h2>Ưu đãi lớn cuối tuần cho dòng máy cao cấp</h2>
+          <p>Giảm trực tiếp đến 5 triệu, tặng tai nghe không dây và miễn phí giao hàng toàn quốc.</p>
+          <a href="#catalog" class="btn btn-primary">Săn deal ngay</a>
+        </div>
+        <div class="countdown-card">
+          <span>Kết thúc sau</span>
+          <div class="countdown" id="countdown">
+            <div><strong id="days">00</strong><span>Ngày</span></div>
+            <div><strong id="hours">00</strong><span>Giờ</span></div>
+            <div><strong id="minutes">00</strong><span>Phút</span></div>
+            <div><strong id="seconds">00</strong><span>Giây</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-sm featured-section">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <span class="eyebrow">Điểm nhấn giao diện</span>
+            <h2>Thiết kế mang cảm giác cao cấp</h2>
+          </div>
+          <p>Layout nhiều lớp, bảng màu mới sang hơn, thẻ sản phẩm nổi bật và animation mượt nhưng vẫn gọn mắt.</p>
+        </div>
+
+        <div class="feature-grid reveal delay-1">
+          <article class="feature-panel panel-large">
+            <h3>Quick View chuyên nghiệp</h3>
+            <p>Xem nhanh thông tin, cấu hình, giá, ưu đãi và thêm vào giỏ mà không cần chuyển trang.</p>
+          </article>
+          <article class="feature-panel">
+            <h3>Local Storage</h3>
+            <p>Giữ giỏ hàng, yêu thích và chế độ sáng tối khi reload trang.</p>
+          </article>
+          <article class="feature-panel">
+            <h3>Lọc & tìm kiếm tức thì</h3>
+            <p>Thao tác mượt, phản hồi nhanh, phù hợp demo đồ án hoặc portfolio frontend.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="reviews section" id="reviews">
+      <div class="container">
+        <div class="section-heading reveal">
+          <div>
+            <span class="eyebrow">Khách hàng nói gì</span>
+            <h2>Đánh giá từ người dùng</h2>
+          </div>
+          <p>Mô phỏng khu vực review để website có chiều sâu như một cửa hàng thương mại điện tử thực tế.</p>
+        </div>
+
+        <div class="review-grid reveal delay-1">
+          <article class="review-card">
+            <div class="review-stars">★★★★★</div>
+            <p>“Giao diện đẹp, tốc độ mượt, cảm giác như web thương mại điện tử thật. Bộ lọc và quick view rất tiện.”</p>
+            <strong>Ngọc Anh</strong>
+            <span>Designer</span>
+          </article>
+          <article class="review-card">
+            <div class="review-stars">★★★★★</div>
+            <p>“Phần animation vừa đủ, không bị rối. Trải nghiệm mua hàng và giỏ hàng nhìn chuyên nghiệp hơn hẳn demo thông thường.”</p>
+            <strong>Minh Khoa</strong>
+            <span>Frontend Developer</span>
+          </article>
+          <article class="review-card">
+            <div class="review-stars">★★★★★</div>
+            <p>“Bố cục rõ ràng, mobile responsive tốt. Có thể dùng làm nền để phát triển thêm phần backend hoặc API sau này.”</p>
+            <strong>Thanh Huyền</strong>
+            <span>Marketing Executive</span>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="contact">
+    <div class="container footer-grid reveal">
+      <div>
+        <div class="brand footer-brand">
+          <div class="brand-logo">AS</div>
+          <div>
+            <strong>Astera Mobile</strong>
+            <span>Premium Phone Studio</span>
+          </div>
+        </div>
+        <p>Website demo bán điện thoại được xây dựng bằng HTML, CSS và JavaScript thuần với bảng màu mới, logo mới, animation mượt và UX/UI cao cấp hơn.</p>
+      </div>
+      <div>
+        <h4>Danh mục</h4>
+        <a href="#catalog">Điện thoại mới</a>
+        <a href="#sale">Khuyến mãi</a>
+        <a href="#reviews">Đánh giá</a>
+      </div>
+      <div>
+        <h4>Hỗ trợ</h4>
+        <a href="#">Chính sách bảo hành</a>
+        <a href="#">Trả góp</a>
+        <a href="#">Vận chuyển</a>
+      </div>
+      <div>
+        <h4>Liên hệ</h4>
+        <a href="mailto:hello@asteramobile.vn">hello@asteramobile.vn</a>
+        <a href="tel:0123456789">0123 456 789</a>
+        <a href="#">TP. Hồ Chí Minh, Việt Nam</a>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 Astera Mobile. Demo frontend chuyên nghiệp cho website bán điện thoại.</div>
+  </footer>
+
+  <aside class="drawer" id="cartDrawer">
+    <div class="drawer-header">
+      <h3>Giỏ hàng</h3>
+      <button class="icon-btn close-drawer" data-close="cartDrawer">✕</button>
+    </div>
+    <div class="drawer-body" id="cartItems"></div>
+    <div class="drawer-footer">
+      <div class="total-row">
+        <span>Tạm tính</span>
+        <strong id="cartTotal">0đ</strong>
+      </div>
+      <p class="drawer-empty checkout-cta-note">Miễn phí giao tiêu chuẩn cho đơn từ 10 triệu và hỗ trợ nhiều phương thức thanh toán.</p>
+      <button class="btn btn-primary btn-block" id="openCheckoutBtn">Thanh toán ngay</button>
+    </div>
+  </aside>
+
+  <aside class="drawer" id="favoritesDrawer">
+    <div class="drawer-header">
+      <h3>Yêu thích</h3>
+      <button class="icon-btn close-drawer" data-close="favoritesDrawer">✕</button>
+    </div>
+    <div class="drawer-body" id="favoriteItems"></div>
+  </aside>
+
+  <div class="overlay" id="overlay"></div>
+
+  <div class="modal" id="quickViewModal">
+    <div class="modal-card">
+      <button class="icon-btn modal-close" id="closeModalBtn">✕</button>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <div class="modal checkout-modal" id="checkoutModal">
+    <div class="modal-card checkout-card">
+      <button class="icon-btn modal-close" id="closeCheckoutBtn">✕</button>
+      <div class="checkout-header">
+        <div>
+          <span class="eyebrow">Thanh toán an toàn</span>
+          <h3>Hoàn tất đơn hàng của bạn</h3>
+          <p>Điền thông tin nhận hàng, chọn phương thức giao và thanh toán để mô phỏng quy trình mua hàng chuyên nghiệp.</p>
+        </div>
+        <div class="checkout-badges">
+          <span>Bảo mật SSL</span>
+          <span>Xác nhận nhanh</span>
+          <span>Hỗ trợ COD</span>
+        </div>
+      </div>
+
+      <div class="checkout-layout">
+        <form class="checkout-form" id="checkoutForm">
+          <div class="checkout-panel">
+            <div class="panel-title">
+              <h4>Thông tin khách hàng</h4>
+              <p>Vui lòng nhập chính xác để demo xử lý đơn hàng mượt hơn.</p>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="fullName">Họ và tên</label>
+                <input type="text" id="fullName" name="fullName" placeholder="Nguyễn Văn A" required />
+              </div>
+              <div class="form-group">
+                <label for="phone">Số điện thoại</label>
+                <input type="tel" id="phone" name="phone" placeholder="09xxxxxxxx" required />
+              </div>
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="you@example.com" />
+              </div>
+              <div class="form-group">
+                <label for="city">Tỉnh / Thành phố</label>
+                <input type="text" id="city" name="city" placeholder="TP. Hồ Chí Minh" required />
+              </div>
+              <div class="form-group form-group-full">
+                <label for="address">Địa chỉ nhận hàng</label>
+                <textarea id="address" name="address" rows="4" placeholder="Số nhà, tên đường, phường/xã, quận/huyện..." required></textarea>
+              </div>
+              <div class="form-group form-group-full">
+                <label for="note">Ghi chú đơn hàng</label>
+                <textarea id="note" name="note" rows="3" placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="checkout-panel">
+            <div class="panel-title">
+              <h4>Vận chuyển</h4>
+              <p>Chọn hình thức phù hợp với nhu cầu nhận hàng của bạn.</p>
+            </div>
+            <div class="option-grid">
+              <label class="option-card">
+                <input type="radio" name="shippingMethod" value="standard" checked />
+                <div>
+                  <strong>Giao tiêu chuẩn</strong>
+                  <span>2 - 4 ngày • Miễn phí từ 10 triệu</span>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="shippingMethod" value="express" />
+                <div>
+                  <strong>Giao hỏa tốc</strong>
+                  <span>Trong ngày nội thành • Phụ phí linh hoạt</span>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="shippingMethod" value="pickup" />
+                <div>
+                  <strong>Nhận tại showroom</strong>
+                  <span>Giữ máy 24h • Không mất phí</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="checkout-panel">
+            <div class="panel-title">
+              <h4>Phương thức thanh toán</h4>
+              <p>Demo giao diện chuyên nghiệp với nhiều lựa chọn thanh toán phổ biến.</p>
+            </div>
+            <div class="option-grid">
+              <label class="option-card">
+                <input type="radio" name="paymentMethod" value="cod" checked />
+                <div>
+                  <strong>Thanh toán khi nhận hàng</strong>
+                  <span>Phù hợp đơn phổ thông • Xác nhận nhanh</span>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="paymentMethod" value="bank" />
+                <div>
+                  <strong>Chuyển khoản ngân hàng</strong>
+                  <span>Giảm thời gian xác nhận • Dễ đối soát</span>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="paymentMethod" value="card" />
+                <div>
+                  <strong>Thẻ quốc tế / nội địa</strong>
+                  <span>Mô phỏng cổng thanh toán an toàn</span>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="paymentMethod" value="installment" />
+                <div>
+                  <strong>Trả góp 0%</strong>
+                  <span>Dành cho máy cao cấp • Hồ sơ nhanh</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </form>
+
+        <aside class="checkout-summary">
+          <div class="checkout-panel sticky-summary">
+            <div class="panel-title">
+              <h4>Tóm tắt đơn hàng</h4>
+              <p>Xem nhanh sản phẩm, áp mã ưu đãi và tổng thanh toán cuối cùng.</p>
+            </div>
+
+            <div class="coupon-box">
+              <label for="couponCode">Mã ưu đãi</label>
+              <div class="coupon-row">
+                <input type="text" id="couponCode" name="coupon" form="checkoutForm" placeholder="ASTERA10" />
+                <button type="button" class="btn btn-secondary coupon-apply" id="applyCouponBtn">Áp dụng</button>
+              </div>
+              <div class="coupon-tags">
+                <button type="button" class="coupon-tag" data-coupon="ASTERA10">ASTERA10</button>
+                <button type="button" class="coupon-tag" data-coupon="MEGA500">MEGA500</button>
+                <button type="button" class="coupon-tag" data-coupon="FREESHIP">FREESHIP</button>
+              </div>
+              <p class="coupon-help" id="couponHint">ASTERA10 giảm 10% tối đa 1.500.000đ • MEGA500 giảm 500.000đ cho đơn từ 15 triệu.</p>
+            </div>
+
+            <div class="checkout-summary-items" id="checkoutSummaryItems"></div>
+
+            <div class="summary-breakdown">
+              <div class="summary-row">
+                <span>Tạm tính</span>
+                <strong id="checkoutSubtotal">0đ</strong>
+              </div>
+              <div class="summary-row">
+                <span>Giảm giá</span>
+                <strong id="checkoutDiscount">0đ</strong>
+              </div>
+              <div class="summary-row">
+                <span>Phí vận chuyển</span>
+                <strong id="checkoutShipping">0đ</strong>
+              </div>
+              <div class="summary-row summary-total">
+                <span>Tổng thanh toán</span>
+                <strong id="checkoutGrandTotal">0đ</strong>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-block" type="submit" form="checkoutForm" id="placeOrderBtn">Xác nhận đặt hàng</button>
+            <p class="secure-note">Bằng việc đặt hàng, bạn đồng ý với chính sách vận chuyển, bảo hành và điều khoản thanh toán của Astera Mobile.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal auth-modal" id="authModal">
+    <div class="modal-card auth-card">
+      <button class="icon-btn modal-close" id="closeAuthBtn">✕</button>
+      <div class="auth-grid">
+        <div class="auth-side">
+          <span class="eyebrow">Tài khoản Astera</span>
+          <h3>Đăng nhập để quản lý đơn hàng và phân quyền truy cập</h3>
+          <p>Chỉ tài khoản có vai trò admin mới được vào trang quản trị. Tài khoản user vẫn mua hàng bình thường nhưng sẽ không thể truy cập khu vực admin.</p>
+          <div class="demo-credentials">
+            <div class="demo-credential">
+              <strong>Admin demo</strong>
+              <span>admin@astera.vn / admin123</span>
+            </div>
+            <div class="demo-credential">
+              <strong>User demo</strong>
+              <span>user@astera.vn / user123</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="auth-main">
+          <div class="auth-tabs">
+            <button type="button" class="auth-tab active" data-auth-tab="login">Đăng nhập</button>
+            <button type="button" class="auth-tab" data-auth-tab="register">Đăng ký user</button>
+            <button type="button" class="auth-tab" data-auth-tab="account">Tài khoản hiện tại</button>
+          </div>
+
+          <div class="auth-panel active" id="authLoginPanel">
+            <form id="loginForm" class="auth-form">
+              <div class="form-group">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" placeholder="admin@astera.vn" required />
+              </div>
+              <div class="form-group">
+                <label for="loginPassword">Mật khẩu</label>
+                <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" required />
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>
+            </form>
+          </div>
+
+          <div class="auth-panel" id="authRegisterPanel">
+            <form id="registerForm" class="auth-form">
+              <div class="form-group">
+                <label for="registerName">Họ và tên</label>
+                <input type="text" id="registerName" placeholder="Nguyễn Văn A" required />
+              </div>
+              <div class="form-group">
+                <label for="registerEmail">Email</label>
+                <input type="email" id="registerEmail" placeholder="user@email.com" required />
+              </div>
+              <div class="form-group">
+                <label for="registerPassword">Mật khẩu</label>
+                <input type="password" id="registerPassword" placeholder="Tối thiểu 6 ký tự" required />
+              </div>
+              <div class="form-group">
+                <label for="registerConfirmPassword">Xác nhận mật khẩu</label>
+                <input type="password" id="registerConfirmPassword" placeholder="Nhập lại mật khẩu" required />
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Tạo tài khoản user</button>
+            </form>
+          </div>
+
+          <div class="auth-panel" id="authAccountPanel">
+            <div class="account-summary" id="accountSummary"></div>
+            <div class="account-actions">
+              <a href="admin-astera-auth.html" class="btn btn-secondary" id="accountAdminLink">Vào admin</a>
+              <button type="button" class="btn btn-primary" id="logoutBtn">Đăng xuất</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Trợ lý ảo Astera AI -->
+  <button class="ai-chat-trigger" id="aiChatTrigger" aria-label="Mở trợ lý ảo Astera AI">
+    <span class="ai-icon">✨</span>
+  </button>
+
+  <div class="ai-chat-widget" id="aiChatWidget">
+    <div class="ai-chat-header">
+      <div class="ai-brand">
+        <div class="ai-avatar">✨</div>
+        <div>
+          <strong>Astera AI</strong>
+          <span>Trợ lý chuyên gia công nghệ</span>
+        </div>
+      </div>
+      <button class="icon-btn close-chat" id="closeAiChatBtn">✕</button>
+    </div>
+    <div class="ai-chat-body" id="aiChatMessages">
+      <div class="ai-message bot-msg">
+        <div class="msg-content">Chào bạn! Mình là Astera AI. Mình có thể giúp gì cho bạn hôm nay? Mình có thể gợi ý điện thoại, so sánh cấu hình, hoặc tư vấn mua máy.</div>
+      </div>
+      <div class="ai-quick-actions" id="aiQuickActions">
+        <button class="ai-chip" data-query="Tư vấn điện thoại pin trâu">🔋 Pin trâu</button>
+        <button class="ai-chip" data-query="Điện thoại chơi game mượt">🎮 Chơi game</button>
+        <button class="ai-chip" data-query="Máy chụp hình đẹp nhất">📸 Chụp ảnh</button>
+        <button class="ai-chip" data-query="Sản phẩm Apple">🍎 iPhone</button>
+      </div>
+    </div>
+    <div class="ai-chat-footer">
+      <form id="aiChatForm" class="ai-input-wrapper">
+        <input type="text" id="aiChatInput" placeholder="Hỏi Astera AI bất cứ điều gì..." autocomplete="off" />
+        <button type="submit" class="ai-send-btn" aria-label="Gửi" disabled id="aiSendBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="script-astera-auth.js"></script>
+</body>
+</html>
