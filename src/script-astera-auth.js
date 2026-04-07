@@ -392,6 +392,7 @@ const registerForm = document.getElementById("registerForm");
 const logoutBtn = document.getElementById("logoutBtn");
 const accountSummary = document.getElementById("accountSummary");
 const accountAdminLink = document.getElementById("accountAdminLink");
+const changePasswordForm = document.getElementById("changePasswordForm");
 const authTabButtons = document.querySelectorAll(".auth-tab");
 const authPanels = {
   login: document.getElementById("authLoginPanel"),
@@ -463,8 +464,8 @@ function renderAccountState() {
       </div>
       <p class="drawer-empty">
         ${session.role === "admin"
-          ? "Tài khoản này có thể truy cập trang quản trị sản phẩm và hóa đơn."
-          : "Tài khoản user chỉ dùng để mua hàng và theo dõi đơn. Truy cập admin sẽ bị từ chối."}
+      ? "Tài khoản này có thể truy cập trang quản trị sản phẩm và hóa đơn."
+      : "Tài khoản user chỉ dùng để mua hàng và theo dõi đơn. Truy cập admin sẽ bị từ chối."}
       </p>
     </div>
   `;
@@ -599,8 +600,46 @@ function handleLogout() {
   renderAccountState();
   if (loginForm) loginForm.reset();
   if (registerForm) registerForm.reset();
+  if (changePasswordForm) changePasswordForm.reset();
   setAuthTab("login");
   showToast("Đã đăng xuất tài khoản.", "success");
+}
+
+function handleChangePassword(event) {
+  event.preventDefault();
+  if (!state.session) return;
+
+  const oldPassword = String(document.getElementById("oldPassword")?.value || "");
+  const newPassword = String(document.getElementById("newPassword")?.value || "");
+
+  if (!oldPassword || !newPassword) {
+    showToast("Vui lòng nhập đầy đủ thông tin.", "error");
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    showToast("Mật khẩu mới cần ít nhất 6 ký tự.", "error");
+    return;
+  }
+
+  const users = loadAuthUsers();
+  const currentUserIndex = users.findIndex(u => u.id === state.session.id);
+
+  if (currentUserIndex === -1) {
+    showToast("Lỗi hệ thống: Không tìm thấy tài khoản.", "error");
+    return;
+  }
+
+  if (users[currentUserIndex].password !== oldPassword) {
+    showToast("Mật khẩu cũ không chính xác.", "error");
+    return;
+  }
+
+  users[currentUserIndex].password = newPassword;
+  saveAuthUsers(users);
+
+  if (changePasswordForm) changePasswordForm.reset();
+  showToast("Cập nhật mật khẩu thành công!", "success");
 }
 
 function buildPhoneSvg(product) {
@@ -1305,6 +1344,7 @@ closeAuthBtn?.addEventListener("click", closePanels);
 loginForm?.addEventListener("submit", handleLogin);
 registerForm?.addEventListener("submit", handleRegister);
 logoutBtn?.addEventListener("click", handleLogout);
+changePasswordForm?.addEventListener("submit", handleChangePassword);
 accountAdminLink?.addEventListener("click", (event) => {
   if (state.session?.role !== "admin") {
     event.preventDefault();
@@ -1351,19 +1391,19 @@ function appendMessage(content, sender = "user", isHtml = false) {
   msgDiv.className = `ai-message ${sender}-msg`;
   const contentDiv = document.createElement("div");
   contentDiv.className = "msg-content";
-  
+
   if (isHtml) contentDiv.innerHTML = content;
   else contentDiv.textContent = content;
-  
+
   msgDiv.appendChild(contentDiv);
-  
+
   // Insert before the typing indicator if it exists
   const typingInd = document.getElementById("aiTypingIndicator");
   if (typingInd && sender === "bot") {
     typingInd.remove();
     isWaitingForAi = false;
   }
-  
+
   aiChatMessages.appendChild(msgDiv);
   scrollToBottom();
 }
@@ -1394,7 +1434,7 @@ async function sendAiMessage(message) {
   appendMessage(message, "user");
   aiChatInput.value = "";
   aiSendBtn.disabled = true;
-  
+
   showTypingIndicator();
 
   try {
@@ -1405,7 +1445,7 @@ async function sendAiMessage(message) {
     });
 
     const data = await res.json();
-    
+
     // Simulate AI thinking delay for realism
     setTimeout(() => {
       appendMessage(formatAiResponse(data.reply), "bot", true);
@@ -1426,34 +1466,34 @@ aiChatTrigger?.addEventListener('pointerdown', (e) => {
   triggerDrag.isMoved = false;
   triggerDrag.startX = e.clientX;
   triggerDrag.startY = e.clientY;
-  
+
   const rect = aiChatTrigger.getBoundingClientRect();
   triggerDrag.initialX = rect.left;
   triggerDrag.initialY = rect.top;
-  
+
   aiChatTrigger.style.transition = 'none'; // Disable transition during drag
   aiChatTrigger.setPointerCapture(e.pointerId);
 });
 
 aiChatTrigger?.addEventListener('pointermove', (e) => {
   if (!triggerDrag.isDragging) return;
-  
+
   const dx = e.clientX - triggerDrag.startX;
   const dy = e.clientY - triggerDrag.startY;
-  
+
   if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
     triggerDrag.isMoved = true;
   }
-  
+
   let newX = triggerDrag.initialX + dx;
   let newY = triggerDrag.initialY + dy;
-  
+
   // Boundary check
   const maxW = window.innerWidth - aiChatTrigger.offsetWidth;
   const maxH = window.innerHeight - aiChatTrigger.offsetHeight;
   newX = Math.max(0, Math.min(newX, maxW));
   newY = Math.max(0, Math.min(newY, maxH));
-  
+
   aiChatTrigger.style.left = `${newX}px`;
   aiChatTrigger.style.top = `${newY}px`;
   aiChatTrigger.style.bottom = 'auto'; // Disable default bottom/right positioning
@@ -1471,15 +1511,15 @@ aiChatTrigger?.addEventListener("click", (e) => {
     e.preventDefault();
     return; // Cancel click if it was a drag
   }
-  
+
   if (!aiChatWidget.classList.contains("show")) {
     // Dynamically position the chat widget next to the trigger icon
     const triggerRect = aiChatTrigger.getBoundingClientRect();
-    
+
     // We should safely measure the widget or use its max bounds
     const widgetWidth = Math.min(window.innerWidth - 32, 380);
     const widgetHeight = Math.min(window.innerHeight - 120, 580);
-    
+
     // Default position (above and aligned right)
     let left = triggerRect.right - widgetWidth;
     let originX = 'right';
@@ -1494,7 +1534,7 @@ aiChatTrigger?.addEventListener("click", (e) => {
       top = triggerRect.bottom + 16;
       originY = 'top';
     }
-    
+
     // Ensure the widget doesn't clip off the edges of the viewport
     left = Math.max(10, Math.min(left, window.innerWidth - widgetWidth - 10));
     top = Math.max(10, Math.min(top, window.innerHeight - widgetHeight - 10));
@@ -1505,9 +1545,9 @@ aiChatTrigger?.addEventListener("click", (e) => {
     aiChatWidget.style.left = `${left}px`;
     aiChatWidget.style.transformOrigin = `${originY} ${originX}`;
   }
-  
+
   aiChatWidget.classList.toggle("show");
-  
+
   if (aiChatWidget.classList.contains("show")) {
     setTimeout(() => aiChatInput?.focus(), 100);
   }
