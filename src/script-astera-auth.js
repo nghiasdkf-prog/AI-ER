@@ -261,11 +261,16 @@ function parseStorage(key, fallback) {
   }
 }
 
-function loadProducts() {
-  const stored = parseStorage(STORAGE_KEYS.products, null);
-  if (Array.isArray(stored) && stored.length) return stored;
-  localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(defaultProducts));
-  return JSON.parse(JSON.stringify(defaultProducts));
+async function loadProducts() {
+  try {
+    const res = await fetch("http://localhost:3000/api/products");
+    if (!res.ok) throw new Error("Fetch failed");
+    return await res.json();
+  } catch (error) {
+    console.error("Error loading products:", error);
+    // Tạm gọi defaultProducts nếu lỗi
+    return typeof defaultProducts !== "undefined" ? JSON.parse(JSON.stringify(defaultProducts)) : [];
+  }
 }
 
 function saveProducts() {
@@ -328,7 +333,7 @@ function clearSession() {
   localStorage.removeItem(STORAGE_KEYS.authSession);
 }
 
-let products = loadProducts();
+let products = [];
 
 const state = {
   category: "Tất cả",
@@ -505,7 +510,7 @@ function prefillCheckoutFromSession() {
   fill("email", state.session.email || "");
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
   const email = String(document.getElementById("loginEmail")?.value || "").trim().toLowerCase();
   const password = String(document.getElementById("loginPassword")?.value || "");
@@ -515,31 +520,42 @@ function handleLogin(event) {
     return;
   }
 
-  const user = loadAuthUsers().find(item => item.email.toLowerCase() === email && item.password === password);
-  if (!user) {
-    showToast("Sai email hoặc mật khẩu.", "error");
-    return;
-  }
+  try {
+    const response = await fetch("http://localhost:3000/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await response.json();
+    
+    if (!response.ok) {
+      showToast(data.message || "Sai email hoặc mật khẩu.", "error");
+      return;
+    }
 
-  state.session = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role
-  };
-  saveSession(state.session);
-  renderAccountState();
-  prefillCheckoutFromSession();
-  setAuthTab("account");
-  showToast(
-    user.role === "admin"
-      ? "Đăng nhập admin thành công. Bạn có thể vào trang quản trị."
-      : "Đăng nhập user thành công. Tài khoản này không có quyền vào admin.",
-    "success"
-  );
+    state.session = {
+      id: data.user.id,
+      name: data.user.username,
+      email: data.user.email,
+      role: data.user.role,
+      token: data.token
+    };
+    saveSession(state.session);
+    renderAccountState();
+    prefillCheckoutFromSession();
+    setAuthTab("account");
+    showToast(
+      data.user.role === "admin"
+        ? "Đăng nhập admin thành công. Bạn có thể vào trang quản trị."
+        : "Đăng nhập user thành công.",
+      "success"
+    );
+  } catch (error) {
+    showToast("Lỗi kết nối máy chủ.", "error");
+  }
 }
 
-function handleRegister(event) {
+async function handleRegister(event) {
   event.preventDefault();
   const name = String(document.getElementById("registerName")?.value || "").trim();
   const email = String(document.getElementById("registerEmail")?.value || "").trim().toLowerCase();
@@ -561,36 +577,25 @@ function handleRegister(event) {
     return;
   }
 
-  const users = loadAuthUsers();
-  if (users.some(item => item.email.toLowerCase() === email)) {
-    showToast("Email này đã tồn tại.", "error");
-    return;
+  try {
+    const response = await fetch("http://localhost:3000/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: name, email, password })
+    });
+    const data = await response.json();
+    
+    if (!response.ok) {
+      showToast(data.message || "Đăng ký thất bại", "error");
+      return;
+    }
+
+    registerForm?.reset();
+    setAuthTab("login");
+    showToast("Đăng ký tài khoản thành công. Hãy đăng nhập.", "success");
+  } catch (error) {
+    showToast("Lỗi kết nối máy chủ.", "error");
   }
-
-  const newUser = {
-    id: `user-${Date.now()}`,
-    name,
-    email,
-    password,
-    role: "user",
-    createdAt: new Date().toISOString()
-  };
-
-  users.unshift(newUser);
-  saveAuthUsers(users);
-
-  state.session = {
-    id: newUser.id,
-    name: newUser.name,
-    email: newUser.email,
-    role: newUser.role
-  };
-  saveSession(state.session);
-  renderAccountState();
-  prefillCheckoutFromSession();
-  registerForm?.reset();
-  setAuthTab("account");
-  showToast("Đăng ký tài khoản user thành công.", "success");
 }
 
 function handleLogout() {
@@ -725,8 +730,8 @@ function renderProducts() {
   }
 
   productGrid.innerHTML = list.map(product => {
-    const favorite = state.favorites.includes(product.id);
-    const inCart = state.cart.find(item => item.id === product.id);
+    const favorite = state.favorites.includes(product._id || product.id);
+    const inCart = state.cart.find(item => item.id === (product._id || product.id));
     return `
       <article class="product-card reveal visible">
         <div class="product-thumb" style="background: linear-gradient(135deg, ${product.theme[0]} 0%, ${product.theme[1]} 45%, ${product.theme[2]} 100%);">
@@ -736,8 +741,8 @@ function renderProducts() {
         <div class="product-top">
           <span class="product-brand">${product.brand}</span>
           <div class="product-actions">
-            <button class="card-action ${favorite ? "active" : ""}" onclick="toggleFavorite(${product.id})" aria-label="Yêu thích">❤</button>
-            <button class="card-action" onclick="openQuickView(${product.id})" aria-label="Xem nhanh">👁</button>
+            <button class="card-action ${favorite ? "active" : ""}" onclick="toggleFavorite('${product._id || product.id}')" aria-label="Yêu thích">❤</button>
+            <button class="card-action" onclick="openQuickView('${product._id || product.id}')" aria-label="Xem nhanh">👁</button>
           </div>
         </div>
 
@@ -763,8 +768,8 @@ function renderProducts() {
             <span>${product.camera}</span>
           </div>
           <div class="product-footer">
-            <button class="btn btn-primary" onclick="addToCart(${product.id})" ${product.stock === 0 ? "disabled" : ""}>${inCart ? "Thêm nữa" : "Thêm giỏ hàng"}</button>
-            <button class="btn btn-secondary" onclick="openQuickView(${product.id})">Chi tiết</button>
+            <button class="btn btn-primary" onclick="addToCart('${product._id || product.id}')" ${product.stock === 0 ? "disabled" : ""}>${inCart ? "Thêm nữa" : "Thêm giỏ hàng"}</button>
+            <button class="btn btn-secondary" onclick="openQuickView('${product._id || product.id}')">Chi tiết</button>
           </div>
         </div>
       </article>
@@ -862,7 +867,7 @@ function updateCartUI() {
           <div class="drawer-empty">${product.memory} • ${product.brand}</div>
           <div class="drawer-row">
             <strong>${formatPrice(product.price)}</strong>
-            <button class="remove-btn" onclick="removeFromCart(${product.id})">Xóa</button>
+            <button class="remove-btn" onclick="removeFromCart('${product._id || product.id}')">Xóa</button>
           </div>
           <div class="drawer-row">
             <div class="qty-controls">
@@ -905,10 +910,10 @@ function updateFavoriteUI() {
           <div class="drawer-empty">${product.camera} • ${product.screen}</div>
           <div class="drawer-row">
             <strong>${formatPrice(product.price)}</strong>
-            <button class="remove-btn" onclick="removeFavorite(${product.id})">Xóa</button>
+            <button class="remove-btn" onclick="removeFavorite('${product._id || product.id}')">Xóa</button>
           </div>
           <div class="drawer-row">
-            <button class="btn btn-primary btn-block" onclick="addToCart(${product.id})">Thêm giỏ hàng</button>
+            <button class="btn btn-primary btn-block" onclick="addToCart('${product._id || product.id}')">Thêm giỏ hàng</button>
           </div>
         </div>
       </div>
@@ -1009,6 +1014,12 @@ function renderCheckoutSummary() {
 }
 
 function openCheckout() {
+  if (!state.session) {
+    showToast("Vui lòng đăng nhập để tiến hành thanh toán.", "error");
+    openAuthModal("login");
+    return;
+  }
+
   if (!state.cart.length) {
     showToast("Giỏ hàng đang trống, chưa thể thanh toán.", "error");
     return;
@@ -1031,7 +1042,7 @@ function openCheckout() {
   document.body.style.overflow = "hidden";
 }
 
-function completeCheckout(event) {
+async function completeCheckout(event) {
   event.preventDefault();
 
   if (!state.cart.length) {
@@ -1083,10 +1094,9 @@ function completeCheckout(event) {
 
   const email = String(formData.get("email") || "").trim();
   const note = String(formData.get("note") || "").trim();
-  const orders = loadOrders();
-  orders.unshift({
+  
+  const orderData = {
     id: orderId,
-    createdAt: new Date().toISOString(),
     status: "Mới",
     paymentStatus: paymentMethod === "cod" ? "Chờ thu tiền" : "Chờ xác nhận",
     paymentMethod,
@@ -1104,8 +1114,20 @@ function completeCheckout(event) {
     },
     items: orderItems,
     totals
-  });
-  saveOrders(orders);
+  };
+
+  try {
+    const res = await fetch("http://localhost:3000/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orderData)
+    });
+    if (!res.ok) throw new Error("API lỗi");
+  } catch (err) {
+    showToast("Lỗi kết nối khi đặt hàng. Vui lòng thử lại sau.", "error");
+    return;
+  }
+
   saveProducts();
 
   state.cart = [];
@@ -1169,8 +1191,8 @@ function openQuickView(id) {
         <li><span>Màu sắc</span><strong>${product.colors.join(", ")}</strong></li>
       </ul>
       <div class="modal-actions">
-        <button class="btn btn-primary" onclick="addToCart(${product.id})" ${product.stock === 0 ? "disabled" : ""}>Thêm vào giỏ hàng</button>
-        <button class="btn btn-secondary" onclick="toggleFavorite(${product.id})">Yêu thích</button>
+        <button class="btn btn-primary" onclick="addToCart('${product._id || product.id}')" ${product.stock === 0 ? "disabled" : ""}>Thêm vào giỏ hàng</button>
+        <button class="btn btn-secondary" onclick="toggleFavorite('${product._id || product.id}')">Yêu thích</button>
       </div>
     </div>
   `;
@@ -1262,12 +1284,41 @@ window.removeFromCart = removeFromCart;
 window.removeFavorite = removeFavorite;
 
 seedAuthUsers();
-populateBrands();
 initTheme();
-updatePriceLabel();
-renderProducts();
+renderAccountState();
 updateCartUI();
 updateFavoriteUI();
+initProducts();
+
+async function initProducts() {
+  try {
+    const response = await fetch("http://localhost:3000/api/products");
+    let fetched = await response.json();
+    
+    if (!Array.isArray(fetched) || fetched.length === 0) {
+       products = typeof defaultProducts !== "undefined" ? JSON.parse(JSON.stringify(defaultProducts)) : [];
+    } else {
+       products = fetched.map(p => ({
+         ...p,
+         id: p._id || p.id,
+         stock: p.stock ?? 10,
+         sale: p.sale ?? 5,
+         oldPrice: p.oldPrice ?? (p.price + 2000000),
+         rating: p.rating ?? 4.8,
+         reviews: p.reviews ?? 150,
+         colors: p.colors || ["Đen", "Trắng"],
+         theme: p.theme || ["#121b33", "#7f8cff", "#e9eeff"],
+         memory: p.memory || "256GB"
+       }));
+    }
+  } catch (error) {
+    products = typeof defaultProducts !== "undefined" ? JSON.parse(JSON.stringify(defaultProducts)) : [];
+  }
+  
+  populateBrands();
+  renderProducts();
+}
+initProducts();
 renderAccountState();
 prefillCheckoutFromSession();
 initCountdown();

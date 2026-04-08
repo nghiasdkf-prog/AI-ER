@@ -438,7 +438,42 @@ function renderAdminSessionInfo() {
   `;
 }
 
-function applyAdminAccess(showToastMessage = false) {
+async function loadProductsData() {
+  try {
+    const res = await fetch("http://localhost:3000/api/products");
+    if (!res.ok) throw new Error("Fetch failed");
+    const fetched = await res.json();
+    state.products = fetched.map(p => ({
+      ...p,
+      id: p._id || p.id,
+      stock: p.stock ?? 10,
+      sale: p.sale ?? 0,
+      oldPrice: p.oldPrice ?? (p.price + 2000000),
+      rating: p.rating ?? 4.5,
+      reviews: p.reviews ?? 0,
+      colors: p.colors || [],
+      theme: p.theme && p.theme.length === 3 ? p.theme : ["#0f766e", "#d4af37", "#ecfeff"]
+    }));
+  } catch (error) {
+    console.error("Error loading products:", error);
+    state.products = [];
+  }
+}
+
+async function loadOrdersData() {
+  try {
+    const res = await fetch("http://localhost:3000/api/orders", {
+      headers: { "Authorization": `Bearer ${state.session.token}` }
+    });
+    if (!res.ok) throw new Error("Fetch failed");
+    state.orders = await res.json();
+  } catch (error) {
+    console.error("Error loading orders:", error);
+    state.orders = [];
+  }
+}
+
+async function applyAdminAccess(showToastMessage = false) {
   renderAdminSessionInfo();
 
   const isAdmin = state.session?.role === "admin";
@@ -447,6 +482,9 @@ function applyAdminAccess(showToastMessage = false) {
   if (isAdmin) {
     if (adminApp) adminApp.style.display = "";
     if (adminAuthGate) adminAuthGate.style.display = "none";
+    
+    await loadProductsData();
+    await loadOrdersData();
     resetProductForm();
     renderAll();
     if (showToastMessage) showToast("Đăng nhập admin thành công.", "success");
@@ -467,7 +505,7 @@ function applyAdminAccess(showToastMessage = false) {
   }
 }
 
-function handleAdminLogin(event) {
+async function handleAdminLogin(event) {
   event.preventDefault();
 
   const email = String(document.getElementById("adminLoginEmail")?.value || "").trim().toLowerCase();
@@ -478,20 +516,31 @@ function handleAdminLogin(event) {
     return;
   }
 
-  const user = loadAuthUsers().find(item => item.email.toLowerCase() === email && item.password === password);
-  if (!user) {
-    showToast("Sai email hoặc mật khẩu.", "error");
-    return;
-  }
+  try {
+    const response = await fetch("http://localhost:3000/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await response.json();
+    
+    if (!response.ok) {
+      showToast(data.message || "Sai email hoặc mật khẩu.", "error");
+      return;
+    }
 
-  state.session = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role
-  };
-  saveSession(state.session);
-  applyAdminAccess(true);
+    state.session = {
+      id: data.user.id,
+      name: data.user.username,
+      email: data.user.email,
+      role: data.user.role,
+      token: data.token
+    };
+    saveSession(state.session);
+    applyAdminAccess(true);
+  } catch (error) {
+    showToast("Lỗi kết nối máy chủ.", "error");
+  }
 }
 
 function handleAdminLogout() {
@@ -611,8 +660,8 @@ function renderProductsTable() {
         <td>${product.rating} ★ <div class="mini-meta">${product.reviews} review</div></td>
         <td>
           <div class="table-actions">
-            <button class="table-btn" onclick="editProduct(${product.id})">Sửa</button>
-            <button class="table-btn danger" onclick="deleteProduct(${product.id})">Xóa</button>
+            <button class="table-btn" onclick="editProduct('${product._id || product.id}')">Sửa</button>
+            <button class="table-btn danger" onclick="deleteProduct('${product._id || product.id}')">Xóa</button>
           </div>
         </td>
       </tr>
@@ -800,11 +849,10 @@ function resetProductForm() {
   document.getElementById("saveProductBtn").textContent = "Lưu sản phẩm";
 }
 
-function handleProductSubmit(event) {
+async function handleProductSubmit(event) {
   event.preventDefault();
 
   const product = {
-    id: state.editingProductId || Date.now(),
     name: fields.name.value.trim(),
     brand: fields.brand.value.trim(),
     category: fields.category.value,
@@ -829,17 +877,36 @@ function handleProductSubmit(event) {
     return;
   }
 
-  if (state.editingProductId) {
-    state.products = state.products.map(item => item.id === state.editingProductId ? product : item);
-    showToast("Đã cập nhật sản phẩm.", "success");
-  } else {
-    state.products.unshift(product);
-    showToast("Đã thêm sản phẩm mới.", "success");
-  }
+  try {
+    let url = "http://localhost:3000/api/products";
+    let method = "POST";
 
-  saveProducts();
-  renderAll();
-  resetProductForm();
+    if (state.editingProductId) {
+      url = `http://localhost:3000/api/products/${state.editingProductId}`;
+      method = "PUT";
+    }
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${state.session.token}`
+      },
+      body: JSON.stringify(product)
+    });
+
+    if (!response.ok) {
+      showToast("Lỗi khi cập nhật/thêm sản phẩm.", "error");
+      return;
+    }
+
+    showToast(state.editingProductId ? "Đã cập nhật sản phẩm." : "Đã thêm sản phẩm mới.", "success");
+    await loadProductsData();
+    renderAll();
+    resetProductForm();
+  } catch (error) {
+    showToast("Lỗi kết nối máy chủ.", "error");
+  }
 }
 
 function editProduct(productId) {
@@ -873,16 +940,29 @@ function editProduct(productId) {
   window.scrollTo({ top: document.getElementById("products").offsetTop - 70, behavior: "smooth" });
 }
 
-function deleteProduct(productId) {
-  const product = state.products.find(item => item.id === productId);
+async function deleteProduct(productId) {
+  const product = state.products.find(item => item._id === productId || item.id === productId);
   if (!product) return;
   if (!confirm(`Xóa sản phẩm "${product.name}"?`)) return;
 
-  state.products = state.products.filter(item => item.id !== productId);
-  saveProducts();
-  renderAll();
-  if (state.editingProductId === productId) resetProductForm();
-  showToast("Đã xóa sản phẩm.", "success");
+  try {
+    const response = await fetch(`http://localhost:3000/api/products/${product._id || product.id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${state.session.token}` }
+    });
+
+    if (!response.ok) {
+      showToast("Lỗi khi xóa sản phẩm.", "error");
+      return;
+    }
+
+    showToast("Đã xóa sản phẩm.", "success");
+    await loadProductsData();
+    renderAll();
+    if (state.editingProductId === productId || state.editingProductId === product._id) resetProductForm();
+  } catch (error) {
+    showToast("Lỗi kết nối máy chủ.", "error");
+  }
 }
 
 function selectOrder(orderId) {
@@ -890,29 +970,50 @@ function selectOrder(orderId) {
   window.scrollTo({ top: document.getElementById("orders").offsetTop - 70, behavior: "smooth" });
 }
 
-function updateOrderStatus(orderId, nextStatus) {
-  state.orders = state.orders.map(order => {
-    if (order.id !== orderId) return order;
-    const paymentStatus = nextStatus === "Hoàn tất"
-      ? "Đã thanh toán"
-      : nextStatus === "Đã hủy"
-      ? "Đã hủy"
-      : order.paymentStatus || "Chờ xác nhận";
-    return { ...order, status: nextStatus, paymentStatus };
-  });
-  saveOrders();
-  renderAll();
-  showToast("Đã cập nhật trạng thái hóa đơn.", "success");
+async function updateOrderStatus(orderId, nextStatus) {
+  const paymentStatus = nextStatus === "Hoàn tất"
+    ? "Đã thanh toán"
+    : nextStatus === "Đã hủy"
+    ? "Đã hủy"
+    : undefined;
+
+  try {
+    const body = { status: nextStatus };
+    if (paymentStatus) body.paymentStatus = paymentStatus;
+
+    const response = await fetch(`http://localhost:3000/api/orders/${orderId}`, {
+      method: "PUT",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${state.session.token}` 
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) throw new Error("Lỗi");
+    showToast("Đã cập nhật trạng thái hóa đơn.", "success");
+    await loadOrdersData();
+    renderAll();
+  } catch (err) {
+    showToast("Lỗi cập nhật hóa đơn.", "error");
+  }
 }
 
-function deleteOrder(orderId) {
-  const order = state.orders.find(item => item.id === orderId);
-  if (!order) return;
-  if (!confirm(`Xóa hóa đơn ${order.id}?`)) return;
-  state.orders = state.orders.filter(item => item.id !== orderId);
-  saveOrders();
-  renderAll();
-  showToast("Đã xóa hóa đơn.", "success");
+async function deleteOrder(orderId) {
+  if (!confirm(`Xóa hóa đơn ${orderId}?`)) return;
+  try {
+    const response = await fetch(`http://localhost:3000/api/orders/${orderId}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${state.session.token}` }
+    });
+    if (!response.ok) throw new Error("Lỗi");
+    
+    showToast("Đã xóa hóa đơn.", "success");
+    await loadOrdersData();
+    renderAll();
+  } catch (err) {
+    showToast("Lỗi kết nối khi xóa.", "error");
+  }
 }
 
 function renderAll() {
