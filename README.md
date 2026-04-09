@@ -31,3 +31,130 @@
 
 ## 🛠️ Công nghệ dự kiến sử dụng
 ---
+
+---
+# 🚀 Chatbox AI - Setup Guide
+
+## 📌 Yêu cầu trước khi chạy
+
+Cần chuẩn bị:
+
+* Node.js (>= 18)
+* MongoDB Atlas account
+* Google Gemini API key
+* Gmail account (đã bật xác minh 2 bước)
+
+---
+
+# 🛠️ Cài đặt dự án
+
+## 1. Clone project
+
+```bash
+git clone <your-repo-url>
+cd <your-project-folder>
+```
+
+## 2. Cài dependencies
+
+```bash
+npm install
+```
+
+---
+
+# ⚙️ Cấu hình Environment
+
+## 1. Tạo file `.env`
+
+Tạo file `.env` trong thư mục gốc của project.
+
+## 2. MongoDB Atlas
+
+* Truy cập: https://www.mongodb.com/atlas
+* Tạo tài khoản
+* Tạo cluster
+* Vào **Database → Connect → Drivers**
+* Copy connection string
+* Dán vào `MONGODB_URI`
+
+## 3. Gemini API Key
+
+* Truy cập: https://aistudio.google.com/
+* Tạo API key
+* Dán vào `GEMINI_API_KEY`
+
+## 4. Gmail App Password
+
+* Vào Google Account
+* Bật **Xác minh 2 bước**
+* Tìm **App Passwords**
+* Tạo mật khẩu ứng dụng
+* Google sẽ cấp chuỗi 16 ký tự
+* Dán vào `EMAIL_PASS`
+
+---
+
+# 📄 Ví dụ file `.env`
+
+```env
+MONGODB_URI=mongodb://<db_username>:<db_password>@chatbox.ohhugvk.mongodb.net/?appName=chatbox
+JWT_SECRET=supersecretkey
+PORT=3000
+GEMINI_API_KEY=<YourAPI>
+
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=465
+EMAIL_USER=<youremail>@gmail.com
+EMAIL_PASS=yourapppass
+ADMIN_EMAIL=admin@gmail.com
+```
+
+---
+
+# ▶️ Chạy project
+
+```bash
+npm start
+```
+
+Hoặc nếu dùng nodemon:
+
+```bash
+npm run dev
+```
+
+Server sẽ chạy tại:
+
+```
+http://localhost:3000
+```
+
+---
+
+# 🔐 Lưu ý bảo mật
+
+* Không commit file `.env` lên GitHub
+* Thêm `.env` vào `.gitignore`
+
+`.gitignore`
+
+```
+.env
+node_modules
+```
+
+---
+
+# 📦 Công nghệ sử dụng
+
+* Node.js
+* Express.js
+* MongoDB Atlas
+* Google Gemini API
+* Nodemailer (Gmail SMTP)
+* JWT Authentication
+
+---
+
+
