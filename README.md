@@ -118,12 +118,6 @@ ADMIN_EMAIL=admin@gmail.com
 npm start
 ```
 
-Hoặc nếu dùng nodemon:
-
-```bash
-npm run dev
-```
-
 Server sẽ chạy tại:
 
 ```
