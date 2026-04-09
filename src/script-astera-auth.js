@@ -1350,11 +1350,8 @@ function processOrderSubmission(paymentMethod, explicitPaymentStatus = null) {
 
   const email = String(formData.get("email") || "").trim();
   const note = String(formData.get("note") || "").trim();
-  
-  let paymentStatus = paymentMethod === "cod" ? "Chờ thu tiền" : "Chờ xác nhận";
-  if (explicitPaymentStatus) paymentStatus = explicitPaymentStatus;
-
-  const orderData = {
+  const orders = loadOrders();
+  orders.unshift({
     id: orderId,
     createdAt: new Date().toISOString(),
     status: "Mới",
@@ -1374,18 +1371,9 @@ function processOrderSubmission(paymentMethod, explicitPaymentStatus = null) {
     },
     items: orderItems,
     totals
-  };
-
-  const orders = loadOrders();
-  orders.unshift(orderData);
+  });
   saveOrders(orders);
   saveProducts();
-
-  fetch("http://localhost:3000/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(orderData)
-  }).catch(err => console.error("Sync order error:", err));
 
   state.cart = [];
   saveState();
