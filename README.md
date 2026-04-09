@@ -17,10 +17,10 @@
 
 ## 📊 Tiến độ và đóng góp cho dự án
 
-| Tính năng/Công việc | Trạng thái | Người phụ trách | Deadline | Ghi chú |
-|:---:|-----------|:----:|---------|---------|
-| Tạo repository,src,docs | ✅ Hoàn thành | ? | 20/03/2026 | Đã setup branch protection |
-| Viết README.md | ✅ Hoàn thành | ? | 20/03/2026 | Đã thêm thông tin thành viên |
+| Tính năng/Công việc | Trạng thái | Deadline | Ghi chú |
+|:---:|-----------|---------|---------|
+| Tạo repository,src,docs | ✅ Hoàn thành | 20/03/2026 | Đã setup branch protection |
+| Viết README.md | ✅ Hoàn thành | 20/03/2026 | Đã thêm thông tin thành viên |
 | Viết Báo Cáo Word | ✅ Hoàn thành | 9/4/2026 | Đã xong |
 | Thiết kế giao diện | ✅ Hoàn thành | 9/4/2026 | Đã xong |
 | Xây dựng database | ✅ Hoàn thành | 9/4/2026 | Đã xong |
