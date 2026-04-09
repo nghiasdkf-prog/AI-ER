@@ -37,6 +37,11 @@
       </nav>
 
       <div class="header-actions">
+        <a href="admin-astera-auth.html" class="btn btn-secondary" id="quickAdminBtn" 
+           style="display: none; gap: 6px; padding: 0 14px; min-height: 40px; font-size: 0.88rem;"
+           aria-label="Vào trang Admin">
+          ⚙️ Admin
+        </a>
         <button class="icon-btn" id="themeToggle" aria-label="Đổi giao diện sáng tối">
           <span class="icon">◐</span>
         </button>
@@ -294,6 +299,33 @@
       </div>
     </section>
   </main>
+
+  <section class="section" id="feedback">
+    <div class="container reveal">
+      <div class="section-heading">
+        <span class="eyebrow">Chúng tôi lắng nghe</span>
+        <h2>Góp ý & Khiếu nại</h2>
+        <p>Bất kỳ sự không hài lòng nào của bạn cũng là cơ hội để chúng tôi cải thiện. Hãy chia sẻ trực tiếp với Ban quản lý.</p>
+      </div>
+      <div class="feedback-container" style="max-width: 600px; margin: 0 auto; background: var(--surface); padding: 30px; border-radius: 20px; border: 1px solid var(--line); box-shadow: var(--shadow-soft);">
+        <form id="feedbackForm" style="display: grid; gap: 16px;">
+          <div class="form-group" style="display: grid; gap: 8px;">
+            <label for="feedbackName" style="font-weight: 600; font-size: 0.9rem;">Họ tên (Không bắt buộc)</label>
+            <input type="text" id="feedbackName" placeholder="Tên của bạn" style="width: 100%; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); padding: 0 14px; background: var(--bg); color: var(--text);" />
+          </div>
+          <div class="form-group" style="display: grid; gap: 8px;">
+            <label for="feedbackEmail" style="font-weight: 600; font-size: 0.9rem;">Email (Không bắt buộc)</label>
+            <input type="email" id="feedbackEmail" placeholder="Để chúng tôi phản hồi lại" style="width: 100%; min-height: 48px; border-radius: 12px; border: 1px solid var(--line); padding: 0 14px; background: var(--bg); color: var(--text);" />
+          </div>
+          <div class="form-group" style="display: grid; gap: 8px;">
+            <label for="feedbackContent" style="font-weight: 600; font-size: 0.9rem;">Nội dung góp ý / khiếu nại <span style="color:red">*</span></label>
+            <textarea id="feedbackContent" required placeholder="Vấn đề bạn gặp phải..." rows="4" style="width: 100%; min-height: 100px; border-radius: 12px; border: 1px solid var(--line); padding: 14px; background: var(--bg); color: var(--text); resize: vertical;"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="margin-top: 8px; width: 100%;">Gửi góp ý</button>
+        </form>
+      </div>
+    </div>
+  </section>
 
   <footer class="site-footer" id="contact">
     <div class="container footer-grid reveal">
@@ -604,13 +636,75 @@
             </form>
           </div>
 
+          <div class="auth-panel" id="authOTPPanel">
+            <form id="otpForm" class="auth-form">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <h4 style="margin: 0; font-size: 1.1rem;">Xác thực Email</h4>
+                <p style="color: var(--muted); font-size: 0.9rem; margin-top: 5px;">Chúng tôi đã gửi một mã gồm 6 số vào email: <br><strong id="otpEmailHint" style="color: var(--text);"></strong></p>
+              </div>
+              <div class="form-group">
+                <label for="otpInput">Nhập mã xác thực (OTP)</label>
+                <input type="text" id="otpInput" placeholder="Ví dụ: 123456" maxlength="6" style="text-align: center; font-size: 1.5rem; letter-spacing: 5px;" required />
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Xác nhận & Kích hoạt</button>
+              <button type="button" class="btn btn-secondary btn-block" onclick="setAuthTab('login')" style="margin-top: 10px;">Quay lại Đăng nhập</button>
+            </form>
+          </div>
+
           <div class="auth-panel" id="authAccountPanel">
             <div class="account-summary" id="accountSummary"></div>
 
+            <div class="user-orders-status-grid" id="userOrderStatusGrid" style="display: none; display: flex; justify-content: space-around; margin-top: 20px; padding: 20px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+              <div class="status-icon-item" onclick="filterOrderList('Mới')">
+                <div class="status-icon">
+                  <span class="icon">📝</span>
+                  <span class="badge" id="countStatusNew">0</span>
+                </div>
+                <span class="status-label">Chờ xác nhận</span>
+              </div>
+              <div class="status-icon-item" onclick="filterOrderList('Đang xử lý')">
+                <div class="status-icon">
+                  <span class="icon">📦</span>
+                  <span class="badge" id="countStatusProcessing">0</span>
+                </div>
+                <span class="status-label">Chờ lấy hàng</span>
+              </div>
+              <div class="status-icon-item" onclick="filterOrderList('Đang giao')">
+                <div class="status-icon">
+                  <span class="icon">🚚</span>
+                  <span class="badge" id="countStatusShipping">0</span>
+                </div>
+                <span class="status-label">Chờ giao hàng</span>
+              </div>
+              <div class="status-icon-item" onclick="filterOrderList('Hoàn tất')">
+                <div class="status-icon">
+                  <span class="icon">⭐</span>
+                  <span class="badge" id="countStatusCompleted">0</span>
+                </div>
+                <span class="status-label">Đã giao</span>
+              </div>
+            </div>
+
+            <div class="user-orders-section" id="userOrdersSection" style="display: none; margin-top: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <h4 style="margin: 0; font-size: 1rem;">Đơn mua</h4>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="badge" id="userOrderCount" style="position: static; font-size: 0.75rem; height: 22px;">0</span>
+                  <span id="currentOrderFilterLabel" style="font-size: 0.85rem; color: var(--muted); cursor: pointer;" onclick="filterOrderList('all')">Xem lịch sử mua hàng ></span>
+                </div>
+              </div>
+              <div id="userOrdersList" class="user-orders-list" style="max-height: 250px;">
+                <!-- Danh sách đơn hàng sẽ được render ở đây -->
+              </div>
+            </div>
+
             <div class="edit-account-section"
-              style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line);">
-              <h4 style="margin-bottom: 16px;">Đổi mật khẩu</h4>
-              <form id="changePasswordForm" class="auth-form">
+              style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line);">
+              <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="togglePasswordForm()">
+                <h4 style="margin: 0; font-size: 1rem;">Đổi mật khẩu</h4>
+                <span id="togglePasswordIcon" style="font-size: 1.2rem; transition: transform 0.3s; color: var(--muted);">▼</span>
+              </div>
+              <form id="changePasswordForm" class="auth-form" style="display: none; margin-top: 16px;">
                 <div class="form-group">
                   <label for="oldPassword">Mật khẩu cũ</label>
                   <input type="password" id="oldPassword" placeholder="Nhập mật khẩu hiện tại" required />
@@ -625,8 +719,7 @@
             </div>
 
             <div class="account-actions" style="margin-top: 24px; display: flex; gap: 12px;">
-              <a href="admin-astera-auth.html" class="btn btn-secondary" id="accountAdminLink" style="flex: 1;">Vào
-                admin</a>
+              <a href="admin-astera-auth.html" class="btn btn-secondary" id="accountAdminLink" style="flex: 1; display: none;">Vào admin</a>
               <button type="button" class="btn btn-secondary" id="logoutBtn"
                 style="flex: 1; color: var(--danger); border-color: var(--danger);">Đăng xuất</button>
             </div>

@@ -1,93 +1,43 @@
-Bạn là Senior Fullstack Developer + UI/UX Designer. Tôi đang xây dựng website bán điện thoại. Hãy nâng cấp hệ thống với đầy đủ chức năng sau:
+# ĐỀ XUẤT NÂNG CẤP HỆ THỐNG ASTERA MOBILE
 
-1. Authentication:
+Dưới đây là danh sách các đề xuất nâng cấp hệ thống để biến ứng dụng thành một sản phẩm e-commerce hoàn chỉnh và chuyên nghiệp hơn:
 
-* Người dùng phải đăng nhập trước khi mua hàng
-* Nếu chưa đăng nhập → redirect sang trang login
-* Có đăng ký, đăng nhập, đăng xuất
-* Phân quyền role: user và admin
-* Lưu session hoặc JWT
-* Hash password (bcrypt)
+## 1. Tích hợp Thanh toán Trực tuyến (Payment Gateway)
+- **Tình trạng hiện tại:** Đang hiển thị "COD" hoặc "Chuyển khoản" dưới dạng văn bản tĩnh.
+- **Đề xuất:** Tích hợp API thanh toán thực tế cổng VNPAY, MoMo, hoặc ZaloPay. Khi khách hàng bấm thanh toán, hệ thống sẽ tự động tạo link QR hoặc chuyển hướng sang cổng thanh toán, sau đó webhook tự động cập nhật trạng thái hóa đơn thành "Đã thanh toán".
 
-2. Database:
-   Sử dụng MongoDB. Tạo các bảng/collection:
+## 2. Nâng cấp Chatbot AI (AI Assistant Mở rộng)
+- **Tình trạng hiện tại:** Chatbot tư vấn, tra cứu tiến độ đơn hàng và ghi nhận khiếu nại rất tốt. Ngữ cảnh (context) hiện đang tính theo từng tin nhắn đơn lẻ.
+- **Đề xuất:**
+  - *Lưu lịch sử hội thoại vào phiên bản (Session/DB)*: Giúp AI nhớ câu hỏi trước đó để trả lời có sự liên kết chặt chẽ hơn.
+  - *Hành động tương tác trực tiếp*: Lập trình để AI có thể hiển thị nút "Thêm vào giỏ" ngay trong cửa sổ chat, người dùng chỉ cần click là mua được hàng do AI tư vấn.
 
-* users (id, username, password, role)
-* products (id, name, price, description, image, created_at)
-* orders (id, user_id, total, created_at)
-* order_items (id, order_id, product_id, quantity)
+## 3. Hệ thống Email Tự động (Nodemailer)
+- **Đề xuất:** Gửi email thông báo tự động (Auto-responder):
+  - Gửi email xác nhận kèm hóa đơn chi tiết ngay khi khách đặt hàng thành công.
+  - Email tự động thông báo "Đã nhận được khiếu nại" khi khách gửi Feedback.
+  - Email báo cáo cho Admin khi có đơn hàng lớn.
 
-3. Admin Dashboard:
+## 4. Bảng phân tích Thống kê nâng cao (Charts & Analytics)
+- **Tình trạng hiện tại:** Trang Admin hiển thị con số thống kê bằng text tĩnh qua các thẻ `<article>`.
+- **Đề xuất:** Tích hợp thư viện Chart.js hoặc ApexCharts để vẽ:
+  - Biểu đồ tăng trưởng doanh thu theo ngày/tháng.
+  - Biểu đồ top 5 sản phẩm bán chạy nhất.
+  - Biểu đồ tròn phân tích lượng người dùng mới / cũ.
 
-* Chỉ admin truy cập được /admin
-* User thường bị redirect về trang chủ
-* Admin có thể:
+## 5. Quản lý Ảnh chuyên nghiệp (Cloud Storage)
+- **Tình trạng hiện tại:** Ảnh sản phẩm đang phải bọc dưới dạng SVG tĩnh hoặc nhập link URL ngoài vào.
+- **Đề xuất:** Thêm tính năng upload file thực tế vào form `Thêm sản phẩm`. Backend (Nodejs) sẽ tải ảnh đó lên lưu trữ đám mây như Cloudinary hoặc AWS S3 và trả về link ảnh lưu vào database.
 
-  * Thêm sản phẩm
-  * Sửa sản phẩm
-  * Xóa sản phẩm
-  * Upload hình ảnh
-  * Quản lý giá và mô tả
-* Hiển thị bảng sản phẩm dạng table
-* Có nút edit/delete
-* Modal xác nhận khi xóa
+## 6. Đánh giá và Bình luận (Review & Rating System)
+- **Đề xuất:** 
+  - Thêm một bảng `Review` trong MongoDB.
+  - Khách hàng (đã đăng nhập và mua hàng thành công) có quyền vào đánh giá số sao và bình luận ảnh thực tế.
+  - Chatbot AI tự động tóm tắt đánh giá của những khách trước đó để báo cáo lại cho khách hàng mới nghe.
 
-4. Product System:
+## 7. Mã giảm giá Động (Coupon & Voucher System)
+- **Tình trạng hiện tại:** Coupon tính trên frontend.
+- **Đề xuất:** Tạo backend API `/api/coupons`. Admin có thể thiết lập thẻ giảm giá (ví dụ: GIAM50K, freeship), có giới hạn số lần sử dụng và ngày hết hạn. Checkout sẽ tự gọi API để tính giá cuối cùng an toàn trên server.
 
-* Load sản phẩm từ database
-* Không dùng dữ liệu hardcode
-* Render động
-* Hiển thị ảnh, tên, giá, mô tả
-* Chỉ admin thấy nút chỉnh sửa
-
-5. Chatbox nâng cấp:
-
-* Giao diện hiện đại, dễ nhìn
-* Typing indicator
-* Auto scroll
-* Lưu lịch sử chat localStorage
-* Nút thu nhỏ chatbox
-* Gợi ý câu hỏi nhanh
-* Avatar user và bot
-* Dark/light mode
-* Hiển thị loading
-
-6. Security:
-
-* Bảo vệ route admin
-* Kiểm tra role trước khi CRUD
-* Validate input
-* Không cho user thường truy cập admin
-* Không cho chỉnh giá âm
-
-7. UI/UX:
-
-* Layout rõ ràng
-* Màu sắc dịu mắt
-* Responsive mobile
-* Button rõ ràng
-* Skeleton loading
-* Toast notification
-
-8. API:
-
-* GET /products
-* POST /products
-* PUT /products/:id
-* DELETE /products/:id
-* POST /login
-* POST /register
-
-9. Yêu cầu output:
-
-* Cấu trúc folder
-* Schema database
-* SQL tạo bảng
-* Backend API
-* Frontend fetch API
-* HTML + CSS + JavaScript
-* Chatbox nâng cấp
-* Admin dashboard UI
-
-Phong cách:
-Đơn giản, hiện đại, dễ dùng cho người mới.
+## 8. Quản lý Profile Khách hàng Chuyên sâu
+- **Đề xuất:** Thêm một trang Dashboard dành riêng cho User (không phải Admin) để xem lại: danh sách địa chỉ giao hàng, lịch sử mua hàng theo mốc thời gian, đổi mật khẩu và xem trực tiếp các phản hồi khiếu nại đã được Admin giải quyết.

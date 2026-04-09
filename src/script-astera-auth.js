@@ -397,13 +397,26 @@ const registerForm = document.getElementById("registerForm");
 const logoutBtn = document.getElementById("logoutBtn");
 const accountSummary = document.getElementById("accountSummary");
 const accountAdminLink = document.getElementById("accountAdminLink");
+const quickAdminBtn = document.getElementById("quickAdminBtn");
+const userOrderStatusGrid = document.getElementById("userOrderStatusGrid");
+const countStatusNew = document.getElementById("countStatusNew");
+const countStatusProcessing = document.getElementById("countStatusProcessing");
+const countStatusShipping = document.getElementById("countStatusShipping");
+const countStatusCompleted = document.getElementById("countStatusCompleted");
+const currentOrderFilterLabel = document.getElementById("currentOrderFilterLabel");
+const userOrdersSection = document.getElementById("userOrdersSection");
+const userOrdersList = document.getElementById("userOrdersList");
+const userOrderCount = document.getElementById("userOrderCount");
 const changePasswordForm = document.getElementById("changePasswordForm");
 const authTabButtons = document.querySelectorAll(".auth-tab");
+const otpForm = document.getElementById("otpForm");
 const authPanels = {
   login: document.getElementById("authLoginPanel"),
   register: document.getElementById("authRegisterPanel"),
-  account: document.getElementById("authAccountPanel")
+  account: document.getElementById("authAccountPanel"),
+  otp: document.getElementById("authOTPPanel")
 };
+let pendingEmail = ""; // For OTP verification
 
 function formatPrice(value) {
   return new Intl.NumberFormat("vi-VN", {
@@ -453,8 +466,10 @@ function renderAccountState() {
       </div>
     `;
     if (accountAdminLink) {
-      accountAdminLink.classList.add("disabled-link");
-      accountAdminLink.setAttribute("aria-disabled", "true");
+      accountAdminLink.style.display = "none";
+    }
+    if (quickAdminBtn) {
+      quickAdminBtn.style.display = "none";
     }
     return;
   }
@@ -477,13 +492,113 @@ function renderAccountState() {
 
   if (accountAdminLink) {
     if (session.role === "admin") {
+      accountAdminLink.style.display = "flex";
       accountAdminLink.classList.remove("disabled-link");
       accountAdminLink.removeAttribute("aria-disabled");
     } else {
-      accountAdminLink.classList.add("disabled-link");
-      accountAdminLink.setAttribute("aria-disabled", "true");
+      accountAdminLink.style.display = "none";
     }
   }
+
+  // Nút Admin nhanh trên header
+  if (quickAdminBtn) {
+    quickAdminBtn.style.display = session.role === "admin" ? "inline-flex" : "none";
+  }
+
+  if (userOrderStatusGrid) {
+    userOrderStatusGrid.style.display = "flex";
+  }
+
+  if (userOrdersSection) {
+    userOrdersSection.style.display = "block";
+    renderUserOrders();
+  }
+}
+
+let currentOrderFilter = 'all';
+
+window.filterOrderList = function(status) {
+  currentOrderFilter = status;
+  renderUserOrders();
+  if (currentOrderFilterLabel) {
+    currentOrderFilterLabel.textContent = status === 'all' ? 'Xem lịch sử mua hàng >' : `Đang lọc: ${status} (xem tất cả) >`;
+  }
+  if (userOrdersList) {
+    userOrdersList.scrollTop = 0;
+  }
+}
+
+window.togglePasswordForm = function() {
+  const form = document.getElementById("changePasswordForm");
+  const icon = document.getElementById("togglePasswordIcon");
+  if (form && icon) {
+    const isHidden = form.style.display === "none";
+    form.style.display = isHidden ? "block" : "none";
+    icon.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+  }
+}
+
+function formatDate(value) {
+  if (!value) return "--";
+  return new Date(value).toLocaleDateString("vi-VN");
+}
+
+async function renderUserOrders() {
+  if (!userOrdersList || !state.session) return;
+  
+  let myOrders = [];
+  try {
+    // Thử lấy từ Server trước để có trạng thái mới nhất
+    const response = await fetch("http://localhost:3000/api/my-orders", {
+      headers: { "Authorization": `Bearer ${state.session.token}` }
+    });
+    if (response.ok) {
+      myOrders = await response.json();
+    } else {
+      throw new Error("Server error");
+    }
+  } catch (err) {
+    // Fallback sang localStorage nếu server lỗi
+    const allOrders = loadOrders();
+    myOrders = allOrders.filter(o => 
+      (o.customer?.userId && o.customer.userId === state.session.id) || 
+      (o.customer?.accountEmail && o.customer.accountEmail === state.session.email)
+    );
+  }
+
+  if (countStatusNew) countStatusNew.textContent = myOrders.filter(o => o.status === 'Mới').length;
+  if (countStatusProcessing) countStatusProcessing.textContent = myOrders.filter(o => o.status === 'Đang xử lý').length;
+  if (countStatusShipping) countStatusShipping.textContent = myOrders.filter(o => o.status === 'Đang giao').length;
+  if (countStatusCompleted) countStatusCompleted.textContent = myOrders.filter(o => o.status === 'Hoàn tất').length;
+
+  const filteredOrders = currentOrderFilter === 'all' 
+    ? myOrders 
+    : myOrders.filter(o => o.status === currentOrderFilter);
+
+  if (userOrderCount) userOrderCount.textContent = filteredOrders.length;
+
+  if (filteredOrders.length === 0) {
+    userOrdersList.innerHTML = `<p class="drawer-empty" style="text-align: center; padding: 20px 0;">Ban chưa có đơn hàng nào ở trạng thái này.</p>`;
+    return;
+  }
+
+  userOrdersList.innerHTML = filteredOrders.map(order => {
+    const itemsText = order.items?.map(i => `${i.name} (x${i.qty})`).join(", ") || "Không có sản phẩm";
+    const statusClass = order.status ? `status-${order.status.replace(/\s+/g, '.')}` : 'status-Mới';
+    return `
+      <div class="user-order-card">
+        <div class="user-order-header">
+          <span class="user-order-id">#${order.id}</span>
+          <span class="user-order-status ${statusClass}">${order.status}</span>
+        </div>
+        <div class="user-order-items">${itemsText}</div>
+        <div class="user-order-footer">
+          <span style="color: var(--muted);">${formatDate(order.createdAt)}</span>
+          <span class="user-order-total">${formatPrice(order.totals?.total || 0)}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 function openAuthModal(tab) {
@@ -520,38 +635,68 @@ async function handleLogin(event) {
     return;
   }
 
+  // Thử đăng nhập qua server trước
+  let loggedIn = false;
   try {
     const response = await fetch("http://localhost:3000/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password }),
+      signal: AbortSignal.timeout(3000)
     });
     const data = await response.json();
     
-    if (!response.ok) {
-      showToast(data.message || "Sai email hoặc mật khẩu.", "error");
+    if (!response.ok && data.requireOTP) {
+      pendingEmail = email;
+      const emailHint = document.getElementById("otpEmailHint");
+      if (emailHint) emailHint.textContent = pendingEmail;
+      setAuthTab("otp");
+      showToast(data.message, "info");
       return;
     }
 
+    if (response.ok && data.user) {
+      state.session = {
+        id: data.user.id,
+        name: data.user.username || data.user.name,
+        email: data.user.email,
+        role: data.user.role,
+        token: data.token
+      };
+      loggedIn = true;
+    } else {
+      showToast(data.message || "Sai email hoặc mật khẩu.", "error");
+      return;
+    }
+  } catch (_) {
+    // Server offline – thử đăng nhập local
+    const users = loadAuthUsers();
+    const user = users.find(u => u.email.toLowerCase() === email && u.password === password);
+    if (!user) {
+      showToast("Sai email hoặc mật khẩu.", "error");
+      return;
+    }
     state.session = {
-      id: data.user.id,
-      name: data.user.username,
-      email: data.user.email,
-      role: data.user.role,
-      token: data.token
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: null
     };
+    loggedIn = true;
+  }
+
+  if (loggedIn) {
     saveSession(state.session);
     renderAccountState();
     prefillCheckoutFromSession();
     setAuthTab("account");
     showToast(
-      data.user.role === "admin"
+      state.session.role === "admin"
         ? "Đăng nhập admin thành công. Bạn có thể vào trang quản trị."
         : "Đăng nhập user thành công.",
       "success"
     );
-  } catch (error) {
-    showToast("Lỗi kết nối máy chủ.", "error");
   }
 }
 
@@ -585,17 +730,63 @@ async function handleRegister(event) {
     });
     const data = await response.json();
     
-    if (!response.ok) {
+    if (!response.ok && !data.requireOTP) {
       showToast(data.message || "Đăng ký thất bại", "error");
       return;
     }
 
     registerForm?.reset();
-    setAuthTab("login");
-    showToast("Đăng ký tài khoản thành công. Hãy đăng nhập.", "success");
+
+    if (data.requireOTP || response.status === 201) {
+      pendingEmail = email;
+      const emailHint = document.getElementById("otpEmailHint");
+      if (emailHint) emailHint.textContent = pendingEmail;
+      setAuthTab("otp");
+      showToast("Vui lòng kiểm tra email để nhận mã OTP.", "info");
+    } else {
+      setAuthTab("login");
+      showToast("Đăng ký tài khoản thành công. Hãy đăng nhập.", "success");
+    }
   } catch (error) {
     showToast("Lỗi kết nối máy chủ.", "error");
   }
+}
+
+async function handleVerifyOTP(event) {
+  event.preventDefault();
+  const otpCode = String(document.getElementById("otpInput")?.value || "").trim();
+
+  if (!otpCode || otpCode.length < 6) {
+    showToast("Vui lòng nhập đủ 6 số OTP.", "error");
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:3000/api/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: pendingEmail, otpCode })
+    });
+    const data = await response.json();
+
+    if (response.ok) {
+      showToast(data.message || "Xác thực thành công. Bạn có thể đăng nhập.", "success");
+      document.getElementById("otpForm")?.reset();
+      setAuthTab("login");
+      
+      // Tự điền sẵn email cho việc đăng nhập tiện hơn
+      const loginEmail = document.getElementById("loginEmail");
+      if (loginEmail) loginEmail.value = pendingEmail;
+    } else {
+      showToast(data.message || "OTP không hợp lệ hoặc đã hết hạn.", "error");
+    }
+  } catch (error) {
+    showToast("Lỗi kết nối máy chủ.", "error");
+  }
+}
+
+if (otpForm) {
+  otpForm.addEventListener("submit", handleVerifyOTP);
 }
 
 function handleLogout() {
@@ -648,7 +839,8 @@ function handleChangePassword(event) {
 }
 
 function buildPhoneSvg(product) {
-  const [c1, c2, c3] = product.theme;
+  if (product.image && product.image.trim() !== '') return product.image;
+  const [c1, c2, c3] = product.theme || ["#121b33", "#7f8cff", "#e9eeff"];
   const text = encodeURIComponent(product.brand + " • " + product.name);
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 420">
@@ -871,9 +1063,9 @@ function updateCartUI() {
           </div>
           <div class="drawer-row">
             <div class="qty-controls">
-              <button onclick="updateCartQty(${product.id}, -1)">−</button>
+              <button onclick="updateCartQty('${product._id || product.id}', -1)">−</button>
               <strong>${item.qty}</strong>
-              <button onclick="updateCartQty(${product.id}, 1)">+</button>
+              <button onclick="updateCartQty('${product._id || product.id}', 1)">+</button>
             </div>
             <strong>${formatPrice(product.price * item.qty)}</strong>
           </div>
@@ -1042,7 +1234,7 @@ function openCheckout() {
   document.body.style.overflow = "hidden";
 }
 
-async function completeCheckout(event) {
+function completeCheckout(event) {
   event.preventDefault();
 
   if (!state.cart.length) {
@@ -1097,6 +1289,7 @@ async function completeCheckout(event) {
   
   const orderData = {
     id: orderId,
+    createdAt: new Date().toISOString(),
     status: "Mới",
     paymentStatus: paymentMethod === "cod" ? "Chờ thu tiền" : "Chờ xác nhận",
     paymentMethod,
@@ -1116,24 +1309,24 @@ async function completeCheckout(event) {
     totals
   };
 
-  try {
-    const res = await fetch("http://localhost:3000/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(orderData)
-    });
-    if (!res.ok) throw new Error("API lỗi");
-  } catch (err) {
-    showToast("Lỗi kết nối khi đặt hàng. Vui lòng thử lại sau.", "error");
-    return;
-  }
-
+  // 1. Lưu vào localStorage (Offline fallback)
+  const orders = loadOrders();
+  orders.unshift(orderData);
+  saveOrders(orders);
   saveProducts();
+
+  // 2. Đồng bộ lên Server (MongoDB)
+  fetch("http://localhost:3000/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(orderData)
+  }).catch(err => console.error("Sync order error:", err));
 
   state.cart = [];
   saveState();
   updateCartUI();
   renderProducts();
+  renderUserOrders();
   renderCheckoutSummary();
   closePanels();
   checkoutForm.reset();
@@ -1492,15 +1685,16 @@ async function sendAiMessage(message) {
     const res = await fetch("http://localhost:3000/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({ 
+        message,
+        email: state.session?.email || null 
+      })
     });
 
     const data = await res.json();
 
-    // Simulate AI thinking delay for realism
-    setTimeout(() => {
-      appendMessage(formatAiResponse(data.reply), "bot", true);
-    }, 600);
+    // Immediately show the AI response
+    appendMessage(formatAiResponse(data.reply), "bot", true);
   } catch (error) {
     console.error("AI Chat error:", error);
     setTimeout(() => {
@@ -1622,3 +1816,37 @@ document.querySelectorAll(".ai-chip").forEach(chip => {
     sendAiMessage(chip.dataset.query);
   });
 });
+
+/* ================= FEEDBACK FORM ================= */
+const feedbackForm = document.getElementById("feedbackForm");
+if (feedbackForm) {
+  feedbackForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("feedbackName").value.trim();
+    const email = document.getElementById("feedbackEmail").value.trim();
+    const content = document.getElementById("feedbackContent").value.trim();
+
+    if (!content) {
+      showToast("Vui lòng nhập nội dung góp ý.", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, content })
+      });
+
+      if (response.ok) {
+        showToast("Cảm ơn bạn đã góp ý. Ban quản lý đã ghi nhận!", "success");
+        feedbackForm.reset();
+      } else {
+        showToast("Lỗi khi gửi góp ý, vui lòng thử lại sau.", "error");
+      }
+    } catch (err) {
+      showToast("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.", "error");
+      console.error("Feedback error", err);
+    }
+  });
+}
