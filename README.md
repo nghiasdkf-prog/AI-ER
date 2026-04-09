@@ -29,9 +29,6 @@
 
 ---
 
-## 🛠️ Công nghệ dự kiến sử dụng
----
-
 ---
 # 🚀 Chatbox AI - Setup Guide
 
@@ -154,6 +151,7 @@ node_modules
 * Google Gemini API
 * Nodemailer (Gmail SMTP)
 * JWT Authentication
+* PayPal
 
 ---
 
