@@ -21,11 +21,11 @@
 |:---:|-----------|:----:|---------|---------|
 | Tạo repository,src,docs | ✅ Hoàn thành | ? | 20/03/2026 | Đã setup branch protection |
 | Viết README.md | ✅ Hoàn thành | ? | 20/03/2026 | Đã thêm thông tin thành viên |
-| Viết Báo Cáo Word | ⏳ Chưa bắt đầu | ?
-| Thiết kế giao diện | ⏳ Chưa bắt đầu | ?
-| Xây dựng database | ⏳ Chưa bắt đầu | ?
-| Viết API | ⏳ Chưa bắt đầu | ?
-| Kiểm thử | ⏳ Chưa bắt đầu | ?
+| Viết Báo Cáo Word | ✅ Hoàn thành | 9/4/2026 | Đã xong |
+| Thiết kế giao diện | ✅ Hoàn thành | 9/4/2026 | Đã xong |
+| Xây dựng database | ✅ Hoàn thành | 9/4/2026 | Đã xong |
+| Viết API | ✅ Hoàn thành | 9/4/2026 | Đã xong |
+| Kiểm thử | ✅ Hoàn thành| 9/4/2026 | Đã xong |
 
 ---
 
