@@ -43,7 +43,7 @@ Cần chuẩn bị:
 * MongoDB Atlas account
 * Google Gemini API key
 * Gmail account (đã bật xác minh 2 bước)
-
+* Sandbox Paypal
 ---
 
 # 🛠️ Cài đặt dự án
@@ -93,9 +93,12 @@ Tạo file `.env` trong thư mục gốc của project.
 * Google sẽ cấp chuỗi 16 ký tự
 * Dán vào `EMAIL_PASS`
 
+## 5. Paypal
+
+* Đăng ký tài khoản Sandbox Paypal
 ---
 
-# 📄 Ví dụ file `.env`
+# 📄 Ví dụ file `.env` và `index-astera-auth`
 
 ```env
 MONGODB_URI=mongodb://<db_username>:<db_password>@chatbox.ohhugvk.mongodb.net/?appName=chatbox
@@ -109,7 +112,10 @@ EMAIL_USER=<youremail>@gmail.com
 EMAIL_PASS=yourapppass
 ADMIN_EMAIL=admin@gmail.com
 ```
-
+```index-astera-auth
+Thêm 1 dòng trong Script
+<script> src="YourAPIPayPal"></script>
+```
 ---
 
 # ▶️ Chạy project
