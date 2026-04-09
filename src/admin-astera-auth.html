@@ -28,6 +28,7 @@
         <a href="#overview">Tổng quan</a>
         <a href="#products">Sản phẩm</a>
         <a href="#orders">Hóa đơn</a>
+        <a href="#feedback">Góp ý</a>
         <a href="index-astera-auth.html">Về cửa hàng</a>
       </nav>
 
@@ -97,31 +98,35 @@
 
         <div class="admin-stats-grid reveal delay-1">
           <article class="admin-stat-card">
+            <div class="admin-stat-icon">📦</div>
             <span>Tổng sản phẩm</span>
             <strong id="statProducts">0</strong>
-            <small>Đang được hiển thị trên cửa hàng</small>
+            <small>Đang hiển thị tại cửa hàng</small>
           </article>
           <article class="admin-stat-card">
+            <div class="admin-stat-icon">✅</div>
             <span>Còn hàng</span>
             <strong id="statInStock">0</strong>
-            <small>Sản phẩm có tồn kho lớn hơn 0</small>
+            <small>Sản phẩm tồn kho > 0</small>
           </article>
           <article class="admin-stat-card">
+            <div class="admin-stat-icon">🧾</div>
             <span>Tổng hóa đơn</span>
             <strong id="statOrders">0</strong>
-            <small>Toàn bộ đơn đã tạo từ checkout</small>
+            <small>Toàn bộ đơn từ checkout</small>
           </article>
           <article class="admin-stat-card">
+            <div class="admin-stat-icon">💰</div>
             <span>Doanh thu demo</span>
             <strong id="statRevenue">0đ</strong>
-            <small>Tổng tiền của các đơn chưa bị hủy</small>
+            <small>Tổng đơn chưa bị hủy</small>
           </article>
         </div>
       </div>
     </section>
 
     <section class="section" id="products">
-      <div class="container admin-grid">
+      <div class="container admin-stack">
         <div class="admin-panel reveal">
           <div class="panel-head">
             <div>
@@ -134,7 +139,7 @@
           <form class="admin-form" id="productForm">
             <input type="hidden" id="productId" />
             <div class="form-grid admin-form-grid">
-              <div class="form-group">
+              <div class="form-group form-group-half">
                 <label for="productName">Tên sản phẩm</label>
                 <input type="text" id="productName" required placeholder="Ví dụ: iPhone 16 Pro Max" />
               </div>
@@ -152,6 +157,7 @@
                   <option value="Tầm trung">Tầm trung</option>
                 </select>
               </div>
+
               <div class="form-group">
                 <label for="productPrice">Giá bán</label>
                 <input type="number" id="productPrice" required min="0" step="1000" />
@@ -168,6 +174,7 @@
                 <label for="productStock">Tồn kho</label>
                 <input type="number" id="productStock" required min="0" />
               </div>
+
               <div class="form-group">
                 <label for="productRating">Đánh giá</label>
                 <input type="number" id="productRating" required min="0" max="5" step="0.1" />
@@ -184,22 +191,30 @@
                 <label for="productBattery">Pin</label>
                 <input type="text" id="productBattery" required placeholder="5000mAh" />
               </div>
-              <div class="form-group">
+
+              <div class="form-group form-group-half">
                 <label for="productCamera">Camera</label>
                 <input type="text" id="productCamera" required placeholder="50MP OIS" />
               </div>
-              <div class="form-group form-group-full">
+              <div class="form-group form-group-half">
                 <label for="productScreen">Màn hình</label>
                 <input type="text" id="productScreen" required placeholder='6.7" AMOLED 120Hz' />
               </div>
-              <div class="form-group form-group-full">
+
+              <div class="form-group form-group-half">
                 <label for="productChip">Chip xử lý</label>
                 <input type="text" id="productChip" required placeholder="Snapdragon 8 Elite" />
               </div>
-              <div class="form-group form-group-full">
+              <div class="form-group form-group-half">
                 <label for="productColors">Màu sắc</label>
                 <input type="text" id="productColors" required placeholder="Đen, Trắng, Xanh" />
               </div>
+
+              <div class="form-group form-group-full">
+                <label for="productImage">Link ảnh minh hoạ</label>
+                <input type="text" id="productImage" placeholder="https://example.com/image.jpg (tuỳ chọn)" />
+              </div>
+
               <div class="form-group">
                 <label for="themeColor1">Màu nền 1</label>
                 <input type="color" id="themeColor1" value="#0f766e" />
@@ -212,6 +227,10 @@
                 <label for="themeColor3">Màu nền 3</label>
                 <input type="color" id="themeColor3" value="#ecfeff" />
               </div>
+              <div class="form-group">
+                <!-- Spacer -->
+              </div>
+
               <div class="form-group form-group-full">
                 <label for="productDesc">Mô tả ngắn</label>
                 <textarea id="productDesc" rows="4" required placeholder="Mô tả ngắn để hiển thị trên cửa hàng..."></textarea>
@@ -256,7 +275,7 @@
     </section>
 
     <section class="section" id="orders">
-      <div class="container admin-grid admin-grid-orders">
+      <div class="container admin-stack">
         <div class="admin-panel reveal">
           <div class="panel-head">
             <div>
@@ -312,10 +331,45 @@
         </div>
       </div>
     </section>
+    <section class="section" id="feedback">
+      <div class="container admin-stack">
+        <div class="admin-panel reveal">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Khách hàng phản hồi</span>
+              <h2>Quản lý Góp ý & Khiếu nại</h2>
+            </div>
+            <div class="panel-tools">
+              <select id="adminFeedbackStatusFilter" class="admin-select" style="min-width: 160px;">
+                <option value="all">Tất cả trạng thái</option>
+                <option value="Mới">Mới</option>
+                <option value="Đã xử lý">Đã xử lý</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Khách hàng</th>
+                  <th>Nội dung</th>
+                  <th>Nguồn</th>
+                  <th>Trạng thái</th>
+                  <th>Ngày tạo</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="feedbackTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="admin-astera-auth.js"></script>
+  <script src="admin-astera-auth.js?v=3"></script>
 </body>
 </html>

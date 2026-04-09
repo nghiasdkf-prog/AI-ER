@@ -331,6 +331,8 @@ const state = {
   productSearch: "",
   orderSearch: "",
   orderStatus: "all",
+  feedbacks: [],
+  feedbackStatus: "all",
   theme: localStorage.getItem(STORAGE_KEYS.theme) || "light",
   session: loadSession()
 };
@@ -340,10 +342,12 @@ const productFormTitle = document.getElementById("productFormTitle");
 const productTableBody = document.getElementById("productTableBody");
 const orderTableBody = document.getElementById("orderTableBody");
 const orderDetailPanel = document.getElementById("orderDetailPanel");
+const feedbackTableBody = document.getElementById("feedbackTableBody");
 const toastContainer = document.getElementById("toastContainer");
 const adminProductSearch = document.getElementById("adminProductSearch");
 const adminOrderSearch = document.getElementById("adminOrderSearch");
 const adminOrderStatusFilter = document.getElementById("adminOrderStatusFilter");
+const adminFeedbackStatusFilter = document.getElementById("adminFeedbackStatusFilter");
 const themeToggle = document.getElementById("themeToggle");
 const menuBtn = document.getElementById("menuBtn");
 const mainNav = document.getElementById("mainNav");
@@ -375,6 +379,7 @@ const fields = {
   chip: document.getElementById("productChip"),
   colors: document.getElementById("productColors"),
   desc: document.getElementById("productDesc"),
+  image: document.getElementById("productImage"),
   theme1: document.getElementById("themeColor1"),
   theme2: document.getElementById("themeColor2"),
   theme3: document.getElementById("themeColor3")
@@ -431,30 +436,102 @@ function renderAdminSessionInfo() {
       </div>
       <p class="drawer-empty">
         ${state.session.role === "admin"
-          ? "Tài khoản này có toàn quyền truy cập khu vực quản trị."
-          : "Bạn đang đăng nhập bằng tài khoản user nên hệ thống sẽ từ chối vào admin."}
+      ? "Tài khoản này có toàn quyền truy cập khu vực quản trị."
+      : "Bạn đang đăng nhập bằng tài khoản user nên hệ thống sẽ từ chối vào admin."}
       </p>
     </div>
   `;
 }
 
-function applyAdminAccess(showToastMessage = false) {
+async function loadProductsData() {
+  try {
+    const res = await fetch("http://localhost:3000/api/products");
+    if (!res.ok) throw new Error("Fetch failed");
+    const fetched = await res.json();
+    if (!Array.isArray(fetched) || fetched.length === 0) {
+      console.warn("API trả về danh sách rỗng, giữ nguyên dữ liệu hiện tại.");
+      return;
+    }
+    state.products = fetched.map(p => {
+      const sanitize = (val) => {
+        if (val === undefined || val === null || String(val).toLowerCase() === "undefined" || String(val).toLowerCase() === "null") return "";
+        return String(val);
+      };
+      return {
+        ...p,
+        id: p._id || p.id,
+        memory: sanitize(p.memory),
+        chip: sanitize(p.chip),
+        brand: sanitize(p.brand) || "Generics",
+        stock: p.stock !== undefined ? p.stock : 10,
+        sale: p.sale !== undefined ? p.sale : 0,
+        oldPrice: p.oldPrice || (p.price + 2000000),
+        rating: p.rating !== undefined ? p.rating : 4.5,
+        reviews: p.reviews !== undefined ? p.reviews : 0,
+        colors: Array.isArray(p.colors) ? p.colors : [],
+        theme: p.theme && p.theme.length === 3 ? p.theme : ["#0f766e", "#d4af37", "#ecfeff"]
+      };
+    });
+  } catch (error) {
+    console.error("Error loading products:", error);
+    if (!state.products || state.products.length === 0) {
+      state.products = JSON.parse(JSON.stringify(defaultProducts));
+    }
+  }
+}
+
+async function loadOrdersData() {
+  try {
+    const res = await fetch("http://localhost:3000/api/orders", {
+      headers: { "Authorization": `Bearer ${state.session?.token || ""}` }
+    });
+    if (!res.ok) throw new Error("Fetch orders failed");
+    const fetched = await res.json();
+    state.orders = fetched;
+  } catch (error) {
+    console.error("Error loading orders:", error);
+    state.orders = loadOrders();
+  }
+}
+
+async function loadFeedbacksData() {
+  try {
+    const res = await fetch("http://localhost:3000/api/feedback", {
+      headers: { "Authorization": `Bearer ${state.session?.token || ""}` }
+    });
+    if (res.ok) {
+      state.feedbacks = await res.json();
+    }
+  } catch (error) {
+    console.error("Error loading feedbacks:", error);
+  }
+}
+
+async function applyAdminAccess(showToastMessage = false) {
   renderAdminSessionInfo();
 
   const isAdmin = state.session?.role === "admin";
   if (adminLogoutBtn) adminLogoutBtn.style.display = state.session ? "inline-flex" : "none";
 
   if (isAdmin) {
-    if (adminApp) adminApp.style.display = "";
+    if (adminApp) adminApp.style.display = "block";
     if (adminAuthGate) adminAuthGate.style.display = "none";
+
+    await loadProductsData();
+    await loadOrdersData();
+    await loadFeedbacksData();
     resetProductForm();
     renderAll();
+    // Kích hoạt reveal animation cho tất cả elements trong adminApp
+    setTimeout(() => {
+      document.querySelectorAll("#adminApp .reveal").forEach(el => el.classList.add("visible"));
+    }, 50);
     if (showToastMessage) showToast("Đăng nhập admin thành công.", "success");
     return;
   }
 
   if (adminApp) adminApp.style.display = "none";
-  if (adminAuthGate) adminAuthGate.style.display = "";
+  if (adminAuthGate) adminAuthGate.style.display = "block";
 
   if (adminAuthMessage) {
     adminAuthMessage.textContent = state.session?.role === "user"
@@ -467,7 +544,7 @@ function applyAdminAccess(showToastMessage = false) {
   }
 }
 
-function handleAdminLogin(event) {
+async function handleAdminLogin(event) {
   event.preventDefault();
 
   const email = String(document.getElementById("adminLoginEmail")?.value || "").trim().toLowerCase();
@@ -478,20 +555,31 @@ function handleAdminLogin(event) {
     return;
   }
 
-  const user = loadAuthUsers().find(item => item.email.toLowerCase() === email && item.password === password);
-  if (!user) {
-    showToast("Sai email hoặc mật khẩu.", "error");
-    return;
-  }
+  try {
+    const response = await fetch("http://localhost:3000/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await response.json();
 
-  state.session = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role
-  };
-  saveSession(state.session);
-  applyAdminAccess(true);
+    if (!response.ok) {
+      showToast(data.message || "Sai email hoặc mật khẩu.", "error");
+      return;
+    }
+
+    state.session = {
+      id: data.user.id,
+      name: data.user.username,
+      email: data.user.email,
+      role: data.user.role,
+      token: data.token
+    };
+    saveSession(state.session);
+    applyAdminAccess(true);
+  } catch (error) {
+    showToast("Lỗi kết nối máy chủ.", "error");
+  }
 }
 
 function handleAdminLogout() {
@@ -503,6 +591,7 @@ function handleAdminLogout() {
 }
 
 function buildPhoneSvg(product) {
+  if (product.image && product.image.trim() !== '') return product.image;
   const theme = Array.isArray(product.theme) && product.theme.length === 3
     ? product.theme
     : ["#0f766e", "#d4af37", "#ecfeff"];
@@ -588,31 +677,40 @@ function renderProductsTable() {
   productTableBody.innerHTML = list.map(product => {
     const stockClass = product.stock > 10 ? "good" : product.stock > 0 ? "low" : "out";
     const stockLabel = product.stock > 10 ? "Kho tốt" : product.stock > 0 ? "Sắp hết" : "Hết hàng";
+    
+    // Extra safety for memory and chip strings
+    const mem = product.memory && String(product.memory).toLowerCase() !== "undefined" ? product.memory : "";
+    const memoryText = mem ? ` • ${mem}` : "";
+    const chipText = product.chip && String(product.chip).toLowerCase() !== "undefined" ? product.chip : "";
+    
     return `
       <tr>
         <td>
           <div class="admin-product-cell">
             <div class="admin-product-thumb" style="background: linear-gradient(135deg, ${product.theme?.[0] || "#0f766e"}, ${product.theme?.[1] || "#d4af37"}, ${product.theme?.[2] || "#ecfeff"});">
-              <img src="${buildPhoneSvg(product)}" alt="${product.name}" />
+              <img src="${product.image || buildPhoneSvg(product)}" alt="${product.name}" />
             </div>
-            <div>
+            <div class="product-cell-info">
               <strong>${product.name}</strong>
-              <div class="mini-meta">${product.brand} • ${product.memory}</div>
-              <div class="mini-meta">${product.chip}</div>
+              <div class="mini-meta">${product.brand}${memoryText}</div>
+              ${chipText ? `<div class="mini-meta">${chipText}</div>` : ""}
             </div>
           </div>
         </td>
-        <td>${product.category}</td>
+        <td><span class="category-badge">${product.category}</span></td>
         <td>
-          <strong>${formatPrice(product.price)}</strong>
-          <div class="mini-meta">Giá cũ ${formatPrice(product.oldPrice)}</div>
+          <div class="price-cell-main">${formatPrice(product.price)}</div>
+          <div class="price-cell-old">${formatPrice(product.oldPrice)}</div>
         </td>
         <td><span class="stock-badge ${stockClass}">${product.stock} • ${stockLabel}</span></td>
-        <td>${product.rating} ★ <div class="mini-meta">${product.reviews} review</div></td>
+        <td>
+          <strong style="font-size:0.95rem">${product.rating} ★</strong>
+          <div class="mini-meta">${product.reviews} đánh giá</div>
+        </td>
         <td>
           <div class="table-actions">
-            <button class="table-btn" onclick="editProduct(${product.id})">Sửa</button>
-            <button class="table-btn danger" onclick="deleteProduct(${product.id})">Xóa</button>
+            <button class="table-btn" onclick="editProduct('${product._id || product.id}')">✏️ Sửa</button>
+            <button class="table-btn danger" onclick="deleteProduct('${product._id || product.id}')">🗑️ Xóa</button>
           </div>
         </td>
       </tr>
@@ -648,7 +746,7 @@ function renderOrdersTable() {
         </td>
         <td>
           <select class="inline-select" onchange="updateOrderStatus('${order.id}', this.value)">
-            ${["Mới","Đang xử lý","Đã xác nhận","Đang giao","Hoàn tất","Đã hủy"].map(status => `<option value="${status}" ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}
+            ${["Mới", "Đang xử lý", "Đã xác nhận", "Đang giao", "Hoàn tất", "Đã hủy"].map(status => `<option value="${status}" ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}
           </select>
         </td>
         <td>${formatDate(order.createdAt)}</td>
@@ -792,6 +890,7 @@ function mapShippingMethod(method) {
 function resetProductForm() {
   productForm.reset();
   fields.productId.value = "";
+  if (fields.image) fields.image.value = "";
   fields.theme1.value = "#0f766e";
   fields.theme2.value = "#d4af37";
   fields.theme3.value = "#ecfeff";
@@ -800,11 +899,10 @@ function resetProductForm() {
   document.getElementById("saveProductBtn").textContent = "Lưu sản phẩm";
 }
 
-function handleProductSubmit(event) {
+async function handleProductSubmit(event) {
   event.preventDefault();
 
   const product = {
-    id: state.editingProductId || Date.now(),
     name: fields.name.value.trim(),
     brand: fields.brand.value.trim(),
     category: fields.category.value,
@@ -821,6 +919,7 @@ function handleProductSubmit(event) {
     screen: fields.screen.value.trim(),
     chip: fields.chip.value.trim(),
     desc: fields.desc.value.trim(),
+    image: fields.image.value.trim(),
     theme: [fields.theme1.value, fields.theme2.value, fields.theme3.value]
   };
 
@@ -829,34 +928,58 @@ function handleProductSubmit(event) {
     return;
   }
 
-  if (state.editingProductId) {
-    state.products = state.products.map(item => item.id === state.editingProductId ? product : item);
-    showToast("Đã cập nhật sản phẩm.", "success");
-  } else {
-    state.products.unshift(product);
-    showToast("Đã thêm sản phẩm mới.", "success");
-  }
+  try {
+    let url = "http://localhost:3000/api/products";
+    let method = "POST";
 
-  saveProducts();
-  renderAll();
-  resetProductForm();
+    if (state.editingProductId) {
+      url = `http://localhost:3000/api/products/${state.editingProductId}`;
+      method = "PUT";
+    }
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${state.session.token}`
+      },
+      body: JSON.stringify(product)
+    });
+
+    if (!response.ok) {
+      showToast("Lỗi khi cập nhật/thêm sản phẩm.", "error");
+      return;
+    }
+
+    showToast(state.editingProductId ? "Đã cập nhật sản phẩm." : "Đã thêm sản phẩm mới.", "success");
+    await loadProductsData();
+    renderAll();
+    resetProductForm();
+  } catch (error) {
+    showToast("Lỗi kết nối máy chủ.", "error");
+  }
 }
 
 function editProduct(productId) {
-  const product = state.products.find(item => item.id === productId);
-  if (!product) return;
+  const product = state.products.find(item => item._id === productId || item.id === productId || String(item._id) === String(productId));
+  if (!product) {
+    console.error("Edit: Product not found", productId);
+    return;
+  }
 
-  state.editingProductId = product.id;
-  fields.productId.value = product.id;
+  // Use the database _id if available for future PUT/DELETE
+  state.editingProductId = product._id || product.id;
+  
+  fields.productId.value = product.id; 
   fields.name.value = product.name || "";
   fields.brand.value = product.brand || "";
   fields.category.value = product.category || "Flagship";
   fields.price.value = product.price || 0;
   fields.oldPrice.value = product.oldPrice || 0;
-  fields.sale.value = product.sale || 0;
-  fields.stock.value = product.stock || 0;
-  fields.rating.value = product.rating || 0;
-  fields.reviews.value = product.reviews || 0;
+  fields.sale.value = product.sale ?? 0;
+  fields.stock.value = product.stock ?? 0;
+  fields.rating.value = product.rating ?? 4.5;
+  fields.reviews.value = product.reviews ?? 0;
   fields.memory.value = product.memory || "";
   fields.battery.value = product.battery || "";
   fields.camera.value = product.camera || "";
@@ -864,6 +987,8 @@ function editProduct(productId) {
   fields.chip.value = product.chip || "";
   fields.colors.value = Array.isArray(product.colors) ? product.colors.join(", ") : "";
   fields.desc.value = product.desc || "";
+  if (fields.image) fields.image.value = product.image || "";
+  
   fields.theme1.value = product.theme?.[0] || "#0f766e";
   fields.theme2.value = product.theme?.[1] || "#d4af37";
   fields.theme3.value = product.theme?.[2] || "#ecfeff";
@@ -873,16 +998,47 @@ function editProduct(productId) {
   window.scrollTo({ top: document.getElementById("products").offsetTop - 70, behavior: "smooth" });
 }
 
-function deleteProduct(productId) {
-  const product = state.products.find(item => item.id === productId);
-  if (!product) return;
+async function deleteProduct(productId) {
+  console.log("Attempting to delete product with ID:", productId);
+  const product = state.products.find(item => item._id === productId || item.id === productId);
+  if (!product) {
+    console.error("Product not found in state for ID:", productId);
+    return;
+  }
+  
   if (!confirm(`Xóa sản phẩm "${product.name}"?`)) return;
 
-  state.products = state.products.filter(item => item.id !== productId);
-  saveProducts();
-  renderAll();
-  if (state.editingProductId === productId) resetProductForm();
-  showToast("Đã xóa sản phẩm.", "success");
+  try {
+    const targetId = product._id || product.id;
+    console.log("Sending DELETE request for ID:", targetId);
+
+    const response = await fetch(`http://localhost:3000/api/products/${targetId}`, {
+      method: "DELETE",
+      headers: { 
+        "Authorization": `Bearer ${state.session?.token || ""}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    console.log("Delete response status:", response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Delete failed:", errorData);
+      showToast(errorData.message || "Lỗi khi xóa sản phẩm.", "error");
+      return;
+    }
+
+    showToast("Đã xóa sản phẩm thành công.", "success");
+    await loadProductsData();
+    renderAll();
+    if (state.editingProductId === productId || state.editingProductId === product._id) {
+      resetProductForm();
+    }
+  } catch (error) {
+    console.error("Network error during delete:", error);
+    showToast("Lỗi kết nối máy chủ.", "error");
+  }
 }
 
 function selectOrder(orderId) {
@@ -890,35 +1046,143 @@ function selectOrder(orderId) {
   window.scrollTo({ top: document.getElementById("orders").offsetTop - 70, behavior: "smooth" });
 }
 
-function updateOrderStatus(orderId, nextStatus) {
-  state.orders = state.orders.map(order => {
-    if (order.id !== orderId) return order;
-    const paymentStatus = nextStatus === "Hoàn tất"
-      ? "Đã thanh toán"
-      : nextStatus === "Đã hủy"
+async function updateOrderStatus(orderId, nextStatus) {
+  const order = state.orders.find(item => item.id === orderId);
+  if (!order) {
+    showToast("Không tìm thấy đơn hàng.", "error");
+    return;
+  }
+
+  const paymentStatus = nextStatus === "Hoàn tất"
+    ? "Đã thanh toán"
+    : nextStatus === "Đã hủy"
       ? "Đã hủy"
       : order.paymentStatus || "Chờ xác nhận";
-    return { ...order, status: nextStatus, paymentStatus };
-  });
+
+  try {
+    const response = await fetch(`http://localhost:3000/api/orders/${orderId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${state.session?.token || ""}`
+      },
+      body: JSON.stringify({ status: nextStatus, paymentStatus })
+    });
+    
+    if (response.ok) {
+      showToast(`Đã cập nhật trạng thái: ${nextStatus}`, "success");
+    } else {
+      showToast("Lỗi khi cập nhật trên server, đã lưu tạm local.", "warning");
+    }
+  } catch (err) {
+    console.warn("Server offline, saving locally only.");
+  }
+
+  // Luôn cập nhật UI và local storage
+  state.orders = state.orders.map(o =>
+    o.id === orderId ? { ...o, status: nextStatus, paymentStatus } : o
+  );
   saveOrders();
   renderAll();
-  showToast("Đã cập nhật trạng thái hóa đơn.", "success");
 }
 
-function deleteOrder(orderId) {
+async function deleteOrder(orderId) {
   const order = state.orders.find(item => item.id === orderId);
   if (!order) return;
   if (!confirm(`Xóa hóa đơn ${order.id}?`)) return;
+
+  try {
+    const response = await fetch(`http://localhost:3000/api/orders/${orderId}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${state.session?.token || ""}` }
+    });
+    if (response.ok) {
+      showToast("Đã xóa hóa đơn thành công.", "success");
+    }
+  } catch (err) {
+    console.warn("Server offline, deleted locally only.");
+  }
+
+  // Luôn cập nhật UI và local storage
   state.orders = state.orders.filter(item => item.id !== orderId);
   saveOrders();
   renderAll();
-  showToast("Đã xóa hóa đơn.", "success");
 }
 
 function renderAll() {
   renderStats();
   renderProductsTable();
   renderOrdersTable();
+  renderFeedbacksTable();
+}
+
+function renderFeedbacksTable() {
+  if (!feedbackTableBody) return;
+  const list = state.feedbacks.filter(fb => state.feedbackStatus === "all" || fb.status === state.feedbackStatus);
+
+  if (!list.length) {
+    feedbackTableBody.innerHTML = `<tr class="empty-row"><td colspan="6">Không có góp ý nào.</td></tr>`;
+    return;
+  }
+
+  feedbackTableBody.innerHTML = list.map(fb => {
+    const statusClass = fb.status === 'Đã xử lý' ? 'paid' : 'pending';
+    return `
+      <tr>
+        <td>
+          <strong>${fb.customerName}</strong>
+          <div class="order-subtext">${fb.customerEmail || "--"}</div>
+        </td>
+        <td style="max-width: 300px; white-space: normal;">${fb.content}</td>
+        <td><span class="category-badge">${fb.source}</span></td>
+        <td><span class="payment-badge ${statusClass}">${fb.status}</span></td>
+        <td>${formatDate(fb.createdAt)}</td>
+        <td>
+          <div class="table-actions">
+            ${fb.status === 'Mới' ? `<button class="table-btn" onclick="resolveFeedback('${fb._id}')">✓ Xử lý</button>` : ''}
+            <button class="table-btn danger" onclick="deleteFeedback('${fb._id}')">Xóa</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+async function resolveFeedback(id) {
+  try {
+    const response = await fetch(`http://localhost:3000/api/feedback/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${state.session.token}`
+      },
+      body: JSON.stringify({ status: "Đã xử lý" })
+    });
+    if (response.ok) {
+      state.feedbacks = state.feedbacks.map(f => f._id === id ? { ...f, status: "Đã xử lý" } : f);
+      renderFeedbacksTable();
+      showToast("Đã đánh dấu xử lý góp ý.", "success");
+    }
+  } catch (err) {
+    showToast("Lỗi cập nhật góp ý.", "error");
+  }
+}
+
+async function deleteFeedback(id) {
+  if (!confirm("Bạn có chắc chắn muốn xóa góp ý này?")) return;
+  try {
+    const response = await fetch(`http://localhost:3000/api/feedback/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${state.session.token}` }
+    });
+    if (response.ok) {
+      state.feedbacks = state.feedbacks.filter(f => f._id !== id);
+      renderFeedbacksTable();
+      showToast("Đã xóa góp ý.", "success");
+    }
+  } catch (err) {
+    showToast("Lỗi xóa góp ý.", "error");
+  }
 }
 
 window.editProduct = editProduct;
@@ -926,6 +1190,8 @@ window.deleteProduct = deleteProduct;
 window.selectOrder = selectOrder;
 window.updateOrderStatus = updateOrderStatus;
 window.deleteOrder = deleteOrder;
+window.resolveFeedback = resolveFeedback;
+window.deleteFeedback = deleteFeedback;
 
 productForm.addEventListener("submit", handleProductSubmit);
 document.getElementById("resetProductFormBtn").addEventListener("click", resetProductForm);
@@ -944,6 +1210,11 @@ adminOrderSearch.addEventListener("input", (e) => {
 adminOrderStatusFilter.addEventListener("change", (e) => {
   state.orderStatus = e.target.value;
   renderOrdersTable();
+});
+
+adminFeedbackStatusFilter?.addEventListener("change", (e) => {
+  state.feedbackStatus = e.target.value;
+  renderFeedbacksTable();
 });
 
 adminLoginForm?.addEventListener("submit", handleAdminLogin);

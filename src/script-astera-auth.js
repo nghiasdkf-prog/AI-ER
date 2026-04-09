@@ -261,11 +261,16 @@ function parseStorage(key, fallback) {
   }
 }
 
-function loadProducts() {
-  const stored = parseStorage(STORAGE_KEYS.products, null);
-  if (Array.isArray(stored) && stored.length) return stored;
-  localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(defaultProducts));
-  return JSON.parse(JSON.stringify(defaultProducts));
+async function loadProducts() {
+  try {
+    const res = await fetch("http://localhost:3000/api/products");
+    if (!res.ok) throw new Error("Fetch failed");
+    return await res.json();
+  } catch (error) {
+    console.error("Error loading products:", error);
+    // Tạm gọi defaultProducts nếu lỗi
+    return typeof defaultProducts !== "undefined" ? JSON.parse(JSON.stringify(defaultProducts)) : [];
+  }
 }
 
 function saveProducts() {
@@ -328,7 +333,7 @@ function clearSession() {
   localStorage.removeItem(STORAGE_KEYS.authSession);
 }
 
-let products = loadProducts();
+let products = [];
 
 const state = {
   category: "Tất cả",
@@ -392,13 +397,26 @@ const registerForm = document.getElementById("registerForm");
 const logoutBtn = document.getElementById("logoutBtn");
 const accountSummary = document.getElementById("accountSummary");
 const accountAdminLink = document.getElementById("accountAdminLink");
+const quickAdminBtn = document.getElementById("quickAdminBtn");
+const userOrderStatusGrid = document.getElementById("userOrderStatusGrid");
+const countStatusNew = document.getElementById("countStatusNew");
+const countStatusProcessing = document.getElementById("countStatusProcessing");
+const countStatusShipping = document.getElementById("countStatusShipping");
+const countStatusCompleted = document.getElementById("countStatusCompleted");
+const currentOrderFilterLabel = document.getElementById("currentOrderFilterLabel");
+const userOrdersSection = document.getElementById("userOrdersSection");
+const userOrdersList = document.getElementById("userOrdersList");
+const userOrderCount = document.getElementById("userOrderCount");
 const changePasswordForm = document.getElementById("changePasswordForm");
 const authTabButtons = document.querySelectorAll(".auth-tab");
+const otpForm = document.getElementById("otpForm");
 const authPanels = {
   login: document.getElementById("authLoginPanel"),
   register: document.getElementById("authRegisterPanel"),
-  account: document.getElementById("authAccountPanel")
+  account: document.getElementById("authAccountPanel"),
+  otp: document.getElementById("authOTPPanel")
 };
+let pendingEmail = ""; // For OTP verification
 
 function formatPrice(value) {
   return new Intl.NumberFormat("vi-VN", {
@@ -448,8 +466,10 @@ function renderAccountState() {
       </div>
     `;
     if (accountAdminLink) {
-      accountAdminLink.classList.add("disabled-link");
-      accountAdminLink.setAttribute("aria-disabled", "true");
+      accountAdminLink.style.display = "none";
+    }
+    if (quickAdminBtn) {
+      quickAdminBtn.style.display = "none";
     }
     return;
   }
@@ -472,13 +492,113 @@ function renderAccountState() {
 
   if (accountAdminLink) {
     if (session.role === "admin") {
+      accountAdminLink.style.display = "flex";
       accountAdminLink.classList.remove("disabled-link");
       accountAdminLink.removeAttribute("aria-disabled");
     } else {
-      accountAdminLink.classList.add("disabled-link");
-      accountAdminLink.setAttribute("aria-disabled", "true");
+      accountAdminLink.style.display = "none";
     }
   }
+
+  // Nút Admin nhanh trên header
+  if (quickAdminBtn) {
+    quickAdminBtn.style.display = session.role === "admin" ? "inline-flex" : "none";
+  }
+
+  if (userOrderStatusGrid) {
+    userOrderStatusGrid.style.display = "flex";
+  }
+
+  if (userOrdersSection) {
+    userOrdersSection.style.display = "block";
+    renderUserOrders();
+  }
+}
+
+let currentOrderFilter = 'all';
+
+window.filterOrderList = function(status) {
+  currentOrderFilter = status;
+  renderUserOrders();
+  if (currentOrderFilterLabel) {
+    currentOrderFilterLabel.textContent = status === 'all' ? 'Xem lịch sử mua hàng >' : `Đang lọc: ${status} (xem tất cả) >`;
+  }
+  if (userOrdersList) {
+    userOrdersList.scrollTop = 0;
+  }
+}
+
+window.togglePasswordForm = function() {
+  const form = document.getElementById("changePasswordForm");
+  const icon = document.getElementById("togglePasswordIcon");
+  if (form && icon) {
+    const isHidden = form.style.display === "none";
+    form.style.display = isHidden ? "block" : "none";
+    icon.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+  }
+}
+
+function formatDate(value) {
+  if (!value) return "--";
+  return new Date(value).toLocaleDateString("vi-VN");
+}
+
+async function renderUserOrders() {
+  if (!userOrdersList || !state.session) return;
+  
+  let myOrders = [];
+  try {
+    // Thử lấy từ Server trước để có trạng thái mới nhất
+    const response = await fetch("http://localhost:3000/api/my-orders", {
+      headers: { "Authorization": `Bearer ${state.session.token}` }
+    });
+    if (response.ok) {
+      myOrders = await response.json();
+    } else {
+      throw new Error("Server error");
+    }
+  } catch (err) {
+    // Fallback sang localStorage nếu server lỗi
+    const allOrders = loadOrders();
+    myOrders = allOrders.filter(o => 
+      (o.customer?.userId && o.customer.userId === state.session.id) || 
+      (o.customer?.accountEmail && o.customer.accountEmail === state.session.email)
+    );
+  }
+
+  if (countStatusNew) countStatusNew.textContent = myOrders.filter(o => o.status === 'Mới').length;
+  if (countStatusProcessing) countStatusProcessing.textContent = myOrders.filter(o => o.status === 'Đang xử lý').length;
+  if (countStatusShipping) countStatusShipping.textContent = myOrders.filter(o => o.status === 'Đang giao').length;
+  if (countStatusCompleted) countStatusCompleted.textContent = myOrders.filter(o => o.status === 'Hoàn tất').length;
+
+  const filteredOrders = currentOrderFilter === 'all' 
+    ? myOrders 
+    : myOrders.filter(o => o.status === currentOrderFilter);
+
+  if (userOrderCount) userOrderCount.textContent = filteredOrders.length;
+
+  if (filteredOrders.length === 0) {
+    userOrdersList.innerHTML = `<p class="drawer-empty" style="text-align: center; padding: 20px 0;">Ban chưa có đơn hàng nào ở trạng thái này.</p>`;
+    return;
+  }
+
+  userOrdersList.innerHTML = filteredOrders.map(order => {
+    const itemsText = order.items?.map(i => `${i.name} (x${i.qty})`).join(", ") || "Không có sản phẩm";
+    const statusClass = order.status ? `status-${order.status.replace(/\s+/g, '.')}` : 'status-Mới';
+    return `
+      <div class="user-order-card">
+        <div class="user-order-header">
+          <span class="user-order-id">#${order.id}</span>
+          <span class="user-order-status ${statusClass}">${order.status}</span>
+        </div>
+        <div class="user-order-items">${itemsText}</div>
+        <div class="user-order-footer">
+          <span style="color: var(--muted);">${formatDate(order.createdAt)}</span>
+          <span class="user-order-total">${formatPrice(order.totals?.total || 0)}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 function openAuthModal(tab) {
@@ -505,7 +625,7 @@ function prefillCheckoutFromSession() {
   fill("email", state.session.email || "");
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
   const email = String(document.getElementById("loginEmail")?.value || "").trim().toLowerCase();
   const password = String(document.getElementById("loginPassword")?.value || "");
@@ -515,31 +635,72 @@ function handleLogin(event) {
     return;
   }
 
-  const user = loadAuthUsers().find(item => item.email.toLowerCase() === email && item.password === password);
-  if (!user) {
-    showToast("Sai email hoặc mật khẩu.", "error");
-    return;
+  // Thử đăng nhập qua server trước
+  let loggedIn = false;
+  try {
+    const response = await fetch("http://localhost:3000/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+      signal: AbortSignal.timeout(3000)
+    });
+    const data = await response.json();
+    
+    if (!response.ok && data.requireOTP) {
+      pendingEmail = email;
+      const emailHint = document.getElementById("otpEmailHint");
+      if (emailHint) emailHint.textContent = pendingEmail;
+      setAuthTab("otp");
+      showToast(data.message, "info");
+      return;
+    }
+
+    if (response.ok && data.user) {
+      state.session = {
+        id: data.user.id,
+        name: data.user.username || data.user.name,
+        email: data.user.email,
+        role: data.user.role,
+        token: data.token
+      };
+      loggedIn = true;
+    } else {
+      showToast(data.message || "Sai email hoặc mật khẩu.", "error");
+      return;
+    }
+  } catch (_) {
+    // Server offline – thử đăng nhập local
+    const users = loadAuthUsers();
+    const user = users.find(u => u.email.toLowerCase() === email && u.password === password);
+    if (!user) {
+      showToast("Sai email hoặc mật khẩu.", "error");
+      return;
+    }
+    state.session = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: null
+    };
+    loggedIn = true;
   }
 
-  state.session = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role
-  };
-  saveSession(state.session);
-  renderAccountState();
-  prefillCheckoutFromSession();
-  setAuthTab("account");
-  showToast(
-    user.role === "admin"
-      ? "Đăng nhập admin thành công. Bạn có thể vào trang quản trị."
-      : "Đăng nhập user thành công. Tài khoản này không có quyền vào admin.",
-    "success"
-  );
+  if (loggedIn) {
+    saveSession(state.session);
+    renderAccountState();
+    prefillCheckoutFromSession();
+    setAuthTab("account");
+    showToast(
+      state.session.role === "admin"
+        ? "Đăng nhập admin thành công. Bạn có thể vào trang quản trị."
+        : "Đăng nhập user thành công.",
+      "success"
+    );
+  }
 }
 
-function handleRegister(event) {
+async function handleRegister(event) {
   event.preventDefault();
   const name = String(document.getElementById("registerName")?.value || "").trim();
   const email = String(document.getElementById("registerEmail")?.value || "").trim().toLowerCase();
@@ -561,36 +722,71 @@ function handleRegister(event) {
     return;
   }
 
-  const users = loadAuthUsers();
-  if (users.some(item => item.email.toLowerCase() === email)) {
-    showToast("Email này đã tồn tại.", "error");
+  try {
+    const response = await fetch("http://localhost:3000/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: name, email, password })
+    });
+    const data = await response.json();
+    
+    if (!response.ok && !data.requireOTP) {
+      showToast(data.message || "Đăng ký thất bại", "error");
+      return;
+    }
+
+    registerForm?.reset();
+
+    if (data.requireOTP || response.status === 201) {
+      pendingEmail = email;
+      const emailHint = document.getElementById("otpEmailHint");
+      if (emailHint) emailHint.textContent = pendingEmail;
+      setAuthTab("otp");
+      showToast("Vui lòng kiểm tra email để nhận mã OTP.", "info");
+    } else {
+      setAuthTab("login");
+      showToast("Đăng ký tài khoản thành công. Hãy đăng nhập.", "success");
+    }
+  } catch (error) {
+    showToast("Lỗi kết nối máy chủ.", "error");
+  }
+}
+
+async function handleVerifyOTP(event) {
+  event.preventDefault();
+  const otpCode = String(document.getElementById("otpInput")?.value || "").trim();
+
+  if (!otpCode || otpCode.length < 6) {
+    showToast("Vui lòng nhập đủ 6 số OTP.", "error");
     return;
   }
 
-  const newUser = {
-    id: `user-${Date.now()}`,
-    name,
-    email,
-    password,
-    role: "user",
-    createdAt: new Date().toISOString()
-  };
+  try {
+    const response = await fetch("http://localhost:3000/api/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: pendingEmail, otpCode })
+    });
+    const data = await response.json();
 
-  users.unshift(newUser);
-  saveAuthUsers(users);
+    if (response.ok) {
+      showToast(data.message || "Xác thực thành công. Bạn có thể đăng nhập.", "success");
+      document.getElementById("otpForm")?.reset();
+      setAuthTab("login");
+      
+      // Tự điền sẵn email cho việc đăng nhập tiện hơn
+      const loginEmail = document.getElementById("loginEmail");
+      if (loginEmail) loginEmail.value = pendingEmail;
+    } else {
+      showToast(data.message || "OTP không hợp lệ hoặc đã hết hạn.", "error");
+    }
+  } catch (error) {
+    showToast("Lỗi kết nối máy chủ.", "error");
+  }
+}
 
-  state.session = {
-    id: newUser.id,
-    name: newUser.name,
-    email: newUser.email,
-    role: newUser.role
-  };
-  saveSession(state.session);
-  renderAccountState();
-  prefillCheckoutFromSession();
-  registerForm?.reset();
-  setAuthTab("account");
-  showToast("Đăng ký tài khoản user thành công.", "success");
+if (otpForm) {
+  otpForm.addEventListener("submit", handleVerifyOTP);
 }
 
 function handleLogout() {
@@ -643,7 +839,8 @@ function handleChangePassword(event) {
 }
 
 function buildPhoneSvg(product) {
-  const [c1, c2, c3] = product.theme;
+  if (product.image && product.image.trim() !== '') return product.image;
+  const [c1, c2, c3] = product.theme || ["#121b33", "#7f8cff", "#e9eeff"];
   const text = encodeURIComponent(product.brand + " • " + product.name);
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 420">
@@ -725,8 +922,8 @@ function renderProducts() {
   }
 
   productGrid.innerHTML = list.map(product => {
-    const favorite = state.favorites.includes(product.id);
-    const inCart = state.cart.find(item => item.id === product.id);
+    const favorite = state.favorites.includes(product._id || product.id);
+    const inCart = state.cart.find(item => item.id === (product._id || product.id));
     return `
       <article class="product-card reveal visible">
         <div class="product-thumb" style="background: linear-gradient(135deg, ${product.theme[0]} 0%, ${product.theme[1]} 45%, ${product.theme[2]} 100%);">
@@ -736,8 +933,8 @@ function renderProducts() {
         <div class="product-top">
           <span class="product-brand">${product.brand}</span>
           <div class="product-actions">
-            <button class="card-action ${favorite ? "active" : ""}" onclick="toggleFavorite(${product.id})" aria-label="Yêu thích">❤</button>
-            <button class="card-action" onclick="openQuickView(${product.id})" aria-label="Xem nhanh">👁</button>
+            <button class="card-action ${favorite ? "active" : ""}" onclick="toggleFavorite('${product._id || product.id}')" aria-label="Yêu thích">❤</button>
+            <button class="card-action" onclick="openQuickView('${product._id || product.id}')" aria-label="Xem nhanh">👁</button>
           </div>
         </div>
 
@@ -763,8 +960,8 @@ function renderProducts() {
             <span>${product.camera}</span>
           </div>
           <div class="product-footer">
-            <button class="btn btn-primary" onclick="addToCart(${product.id})" ${product.stock === 0 ? "disabled" : ""}>${inCart ? "Thêm nữa" : "Thêm giỏ hàng"}</button>
-            <button class="btn btn-secondary" onclick="openQuickView(${product.id})">Chi tiết</button>
+            <button class="btn btn-primary" onclick="addToCart('${product._id || product.id}')" ${product.stock === 0 ? "disabled" : ""}>${inCart ? "Thêm nữa" : "Thêm giỏ hàng"}</button>
+            <button class="btn btn-secondary" onclick="openQuickView('${product._id || product.id}')">Chi tiết</button>
           </div>
         </div>
       </article>
@@ -862,13 +1059,13 @@ function updateCartUI() {
           <div class="drawer-empty">${product.memory} • ${product.brand}</div>
           <div class="drawer-row">
             <strong>${formatPrice(product.price)}</strong>
-            <button class="remove-btn" onclick="removeFromCart(${product.id})">Xóa</button>
+            <button class="remove-btn" onclick="removeFromCart('${product._id || product.id}')">Xóa</button>
           </div>
           <div class="drawer-row">
             <div class="qty-controls">
-              <button onclick="updateCartQty(${product.id}, -1)">−</button>
+              <button onclick="updateCartQty('${product._id || product.id}', -1)">−</button>
               <strong>${item.qty}</strong>
-              <button onclick="updateCartQty(${product.id}, 1)">+</button>
+              <button onclick="updateCartQty('${product._id || product.id}', 1)">+</button>
             </div>
             <strong>${formatPrice(product.price * item.qty)}</strong>
           </div>
@@ -905,10 +1102,10 @@ function updateFavoriteUI() {
           <div class="drawer-empty">${product.camera} • ${product.screen}</div>
           <div class="drawer-row">
             <strong>${formatPrice(product.price)}</strong>
-            <button class="remove-btn" onclick="removeFavorite(${product.id})">Xóa</button>
+            <button class="remove-btn" onclick="removeFavorite('${product._id || product.id}')">Xóa</button>
           </div>
           <div class="drawer-row">
-            <button class="btn btn-primary btn-block" onclick="addToCart(${product.id})">Thêm giỏ hàng</button>
+            <button class="btn btn-primary btn-block" onclick="addToCart('${product._id || product.id}')">Thêm giỏ hàng</button>
           </div>
         </div>
       </div>
@@ -1009,6 +1206,12 @@ function renderCheckoutSummary() {
 }
 
 function openCheckout() {
+  if (!state.session) {
+    showToast("Vui lòng đăng nhập để tiến hành thanh toán.", "error");
+    openAuthModal("login");
+    return;
+  }
+
   if (!state.cart.length) {
     showToast("Giỏ hàng đang trống, chưa thể thanh toán.", "error");
     return;
@@ -1029,11 +1232,76 @@ function openCheckout() {
   overlay.classList.add("show");
   checkoutModal.classList.add("show");
   document.body.style.overflow = "hidden";
+
+  // Check UI for paypal immediately on open
+  const paypalContainer = document.getElementById("paypal-button-container");
+  const placeOrderBtn = document.getElementById("placeOrderBtn");
+  if (state.paymentMethod === "paypal") {
+    if (placeOrderBtn) placeOrderBtn.style.display = "none";
+    if (paypalContainer) paypalContainer.style.display = "block";
+    initPayPalButton();
+  } else {
+    if (placeOrderBtn) placeOrderBtn.style.display = "block";
+    if (paypalContainer) paypalContainer.style.display = "none";
+  }
 }
 
-function completeCheckout(event) {
-  event.preventDefault();
+/* ================= PAYPAL INTEGRATION ================= */
+function initPayPalButton() {
+  if (typeof paypal === 'undefined') {
+    showToast("Đang tải thư viện PayPal, vui lòng đợi 1 giây rồi thử lại.", "info");
+    return;
+  }
+  const container = document.getElementById("paypal-button-container");
+  if (!container) {
+    console.error("Không tìm thấy paypal-button-container");
+    return;
+  }
+  if (container.dataset.initialized) return;
 
+  try {
+    paypal.Buttons({
+      createOrder: function(data, actions) {
+        const formData = new FormData(checkoutForm);
+        const fullName = String(formData.get("fullName") || "").trim();
+        const phone = String(formData.get("phone") || "").trim().replace(/\s+/g, "");
+        const city = String(formData.get("city") || "").trim();
+        const address = String(formData.get("address") || "").trim();
+        
+        if (!fullName || !phone || !city || !address) {
+          showToast("Vui lòng điền đủ họ tên, SĐT, và địa chỉ.", "error");
+          return Promise.reject("Incomplete info");
+        }
+        
+        const totals = getCheckoutTotals();
+        let usdTotal = (totals.total / 25000).toFixed(2);
+        if (parseFloat(usdTotal) <= 0) usdTotal = "0.10";
+
+        return actions.order.create({
+          purchase_units: [{
+            amount: { value: usdTotal, currency_code: 'USD' }
+          }]
+        });
+      },
+      onApprove: function(data, actions) {
+        return actions.order.capture().then(function(details) {
+          showToast(`Giao dịch PayPal thành công cho ${details.payer.name.given_name}!`, "success");
+          processOrderSubmission("paypal", "Đã thanh toán (PayPal)");
+        });
+      },
+      onError: function(err) {
+        showToast("Có lỗi xảy ra khi tạo giao dịch PayPal.", "error");
+        console.error("PayPal Error:", err);
+      }
+    }).render('#paypal-button-container');
+    container.dataset.initialized = "true";
+  } catch (err) {
+    showToast("Lớp hiển thị PayPal hiện đang gặp lỗi.", "error");
+    console.error("PayPal Render Error:", err);
+  }
+}
+
+function processOrderSubmission(paymentMethod, explicitPaymentStatus = null) {
   if (!state.cart.length) {
     showToast("Giỏ hàng đang trống, chưa thể tạo đơn.", "error");
     return;
@@ -1044,11 +1312,10 @@ function completeCheckout(event) {
   const phone = String(formData.get("phone") || "").trim().replace(/\s+/g, "");
   const city = String(formData.get("city") || "").trim();
   const address = String(formData.get("address") || "").trim();
-  const paymentMethod = String(formData.get("paymentMethod") || "cod");
   const shippingMethod = String(formData.get("shippingMethod") || "standard");
 
   if (!fullName || !phone || !city || !address) {
-    showToast("Vui lòng nhập đầy đủ họ tên, điện thoại và địa chỉ nhận hàng.", "error");
+    showToast("Vui lòng nhập đầy đủ thông tin nhận hàng.", "error");
     return;
   }
 
@@ -1083,12 +1350,15 @@ function completeCheckout(event) {
 
   const email = String(formData.get("email") || "").trim();
   const note = String(formData.get("note") || "").trim();
-  const orders = loadOrders();
-  orders.unshift({
+  
+  let paymentStatus = paymentMethod === "cod" ? "Chờ thu tiền" : "Chờ xác nhận";
+  if (explicitPaymentStatus) paymentStatus = explicitPaymentStatus;
+
+  const orderData = {
     id: orderId,
     createdAt: new Date().toISOString(),
     status: "Mới",
-    paymentStatus: paymentMethod === "cod" ? "Chờ thu tiền" : "Chờ xác nhận",
+    paymentStatus: paymentStatus,
     paymentMethod,
     shippingMethod,
     coupon: totals.couponCode,
@@ -1104,14 +1374,24 @@ function completeCheckout(event) {
     },
     items: orderItems,
     totals
-  });
+  };
+
+  const orders = loadOrders();
+  orders.unshift(orderData);
   saveOrders(orders);
   saveProducts();
+
+  fetch("http://localhost:3000/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(orderData)
+  }).catch(err => console.error("Sync order error:", err));
 
   state.cart = [];
   saveState();
   updateCartUI();
   renderProducts();
+  renderUserOrders();
   renderCheckoutSummary();
   closePanels();
   checkoutForm.reset();
@@ -1119,7 +1399,27 @@ function completeCheckout(event) {
   state.paymentMethod = "cod";
   state.coupon = "";
 
-  showToast(`Đặt hàng thành công. Mã đơn ${orderId} • Tổng thanh toán ${formatPrice(totals.total)}.`, "success");
+  if (paymentMethod === "paypal") {
+    const successModal = document.getElementById("successPaypalModal");
+    if (successModal) {
+      overlay.classList.add("show");
+      successModal.classList.add("show");
+    } else {
+      showToast(`Thanh toán hoàn tất. Mã đơn ${orderId} • Cám ơn bạn đã sử dụng PayPal.`, "success");
+    }
+  } else {
+    showToast(`Đặt hàng thành công. Mã đơn ${orderId} • Tổng ${formatPrice(totals.total)}.`, "success");
+  }
+}
+
+function completeCheckout(event) {
+  event.preventDefault();
+  const paymentMethod = String(new FormData(checkoutForm).get("paymentMethod") || "cod");
+  if (paymentMethod === "paypal") {
+    showToast("Vui lòng nhấn nút PayPal để thanh toán.", "info");
+    return;
+  }
+  processOrderSubmission(paymentMethod);
 }
 
 function openDrawer(type) {
@@ -1137,6 +1437,7 @@ function closePanels() {
   quickViewModal.classList.remove("show");
   checkoutModal.classList.remove("show");
   authModal?.classList.remove("show");
+  document.getElementById("successPaypalModal")?.classList.remove("show");
   document.body.style.overflow = "";
 }
 
@@ -1169,8 +1470,8 @@ function openQuickView(id) {
         <li><span>Màu sắc</span><strong>${product.colors.join(", ")}</strong></li>
       </ul>
       <div class="modal-actions">
-        <button class="btn btn-primary" onclick="addToCart(${product.id})" ${product.stock === 0 ? "disabled" : ""}>Thêm vào giỏ hàng</button>
-        <button class="btn btn-secondary" onclick="toggleFavorite(${product.id})">Yêu thích</button>
+        <button class="btn btn-primary" onclick="addToCart('${product._id || product.id}')" ${product.stock === 0 ? "disabled" : ""}>Thêm vào giỏ hàng</button>
+        <button class="btn btn-secondary" onclick="toggleFavorite('${product._id || product.id}')">Yêu thích</button>
       </div>
     </div>
   `;
@@ -1262,12 +1563,41 @@ window.removeFromCart = removeFromCart;
 window.removeFavorite = removeFavorite;
 
 seedAuthUsers();
-populateBrands();
 initTheme();
-updatePriceLabel();
-renderProducts();
+renderAccountState();
 updateCartUI();
 updateFavoriteUI();
+initProducts();
+
+async function initProducts() {
+  try {
+    const response = await fetch("http://localhost:3000/api/products");
+    let fetched = await response.json();
+    
+    if (!Array.isArray(fetched) || fetched.length === 0) {
+       products = typeof defaultProducts !== "undefined" ? JSON.parse(JSON.stringify(defaultProducts)) : [];
+    } else {
+       products = fetched.map(p => ({
+         ...p,
+         id: p._id || p.id,
+         stock: p.stock ?? 10,
+         sale: p.sale ?? 5,
+         oldPrice: p.oldPrice ?? (p.price + 2000000),
+         rating: p.rating ?? 4.8,
+         reviews: p.reviews ?? 150,
+         colors: p.colors || ["Đen", "Trắng"],
+         theme: p.theme || ["#121b33", "#7f8cff", "#e9eeff"],
+         memory: p.memory || "256GB"
+       }));
+    }
+  } catch (error) {
+    products = typeof defaultProducts !== "undefined" ? JSON.parse(JSON.stringify(defaultProducts)) : [];
+  }
+  
+  populateBrands();
+  renderProducts();
+}
+initProducts();
 renderAccountState();
 prefillCheckoutFromSession();
 initCountdown();
@@ -1326,7 +1656,23 @@ document.getElementById("scrollDealsBtn").addEventListener("click", () => {
 openCheckoutBtn?.addEventListener("click", openCheckout);
 checkoutForm?.addEventListener("submit", completeCheckout);
 checkoutForm?.addEventListener("input", renderCheckoutSummary);
-checkoutForm?.addEventListener("change", renderCheckoutSummary);
+checkoutForm?.addEventListener("change", (e) => {
+  renderCheckoutSummary();
+  if (e.target.name === "paymentMethod") {
+    state.paymentMethod = e.target.value;
+    const paypalContainer = document.getElementById("paypal-button-container");
+    const placeOrderBtn = document.getElementById("placeOrderBtn");
+    
+    if (e.target.value === "paypal") {
+      if (placeOrderBtn) placeOrderBtn.style.display = "none";
+      if (paypalContainer) paypalContainer.style.display = "block";
+      initPayPalButton();
+    } else {
+      if (placeOrderBtn) placeOrderBtn.style.display = "block";
+      if (paypalContainer) paypalContainer.style.display = "none";
+    }
+  }
+});
 document.getElementById("applyCouponBtn")?.addEventListener("click", renderCheckoutSummary);
 document.querySelectorAll("[data-coupon]").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -1441,15 +1787,16 @@ async function sendAiMessage(message) {
     const res = await fetch("http://localhost:3000/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({ 
+        message,
+        email: state.session?.email || null 
+      })
     });
 
     const data = await res.json();
 
-    // Simulate AI thinking delay for realism
-    setTimeout(() => {
-      appendMessage(formatAiResponse(data.reply), "bot", true);
-    }, 600);
+    // Immediately show the AI response
+    appendMessage(formatAiResponse(data.reply), "bot", true);
   } catch (error) {
     console.error("AI Chat error:", error);
     setTimeout(() => {
@@ -1571,3 +1918,37 @@ document.querySelectorAll(".ai-chip").forEach(chip => {
     sendAiMessage(chip.dataset.query);
   });
 });
+
+/* ================= FEEDBACK FORM ================= */
+const feedbackForm = document.getElementById("feedbackForm");
+if (feedbackForm) {
+  feedbackForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("feedbackName").value.trim();
+    const email = document.getElementById("feedbackEmail").value.trim();
+    const content = document.getElementById("feedbackContent").value.trim();
+
+    if (!content) {
+      showToast("Vui lòng nhập nội dung góp ý.", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, content })
+      });
+
+      if (response.ok) {
+        showToast("Cảm ơn bạn đã góp ý. Ban quản lý đã ghi nhận!", "success");
+        feedbackForm.reset();
+      } else {
+        showToast("Lỗi khi gửi góp ý, vui lòng thử lại sau.", "error");
+      }
+    } catch (err) {
+      showToast("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.", "error");
+      console.error("Feedback error", err);
+    }
+  });
+}
